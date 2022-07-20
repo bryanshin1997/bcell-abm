@@ -7,12 +7,14 @@ breed [gc-b-cells gc-b-cell]
 breed [sl-plasma-cells sl-plasma-cell]
 breed [ll-plasma-cells ll-plasma-cell]
 breed [mem-b-cells mem-b-cell]
+breed [breg-cells breg-cell]
 breed [tfh-cells tfh-cell]
 breed [th0-cells th0-cell]
 breed [th1-cells th1-cell]
 breed [th2-cells th2-cell]
-;
-turtles-own [ in-blood bcr isotype csr-bool time-alive s1pr1-level s1pr2-level cxcr5-level ccr7-level ebi2r-level ]
+
+
+turtles-own [ in-blood bcr isotype csr-bool time-alive s1pr1-level s1pr2-level cxcr5-level ccr7-level ebi2r-level pro-breg level-of-activation]
 activated-b-cells-own [ response-type ]
 antibodies-own [antibody-type]
 bacteria-own [ epitope-type num-TI-ag num-TD-ag ]
@@ -60,6 +62,8 @@ to setup
   set num-naive-b-cells-in-blood 1000
   set is-gc-seeded false
 
+
+
   reset-ticks
 end
 
@@ -91,6 +95,9 @@ to go
   ask th1-cells [th1-cell-function ]
   ask th2-cells [th2-cell-function ]
   ask bacteria [ bacteria-function ]
+  ask breg-cells [ breg-function ]
+
+  ask antibodies [antibodies-function]
 
   update-chemokine-gradient
 
@@ -108,7 +115,7 @@ end
 to spawn-b-cell
 
   if counter mod 7 = 0 and num-naive-b-cells-in-blood != 0[
-    create-naive-b-cells 1 [ set shape "circle" set color white setxy 49 0
+    create-naive-b-cells 1 [ set shape "circle" set color white set size 1 setxy 49 0
       set time-alive 0
       set bcr random 30
       set isotype "md"              ;; isotype of "md" is IgM/IgD coexpresion. "d" is IgD, "m" is IgM, "a" is IgA, "g" is IgG, "e" is IgE
@@ -158,11 +165,17 @@ to fdc-function
   ]
 end
 
+to antibodies-function
+   set time-alive time-alive + 1
+  if time-alive > 400 [
+    die
+  ]
+end
 
 to naive-b-cell-function
 
   if in-blood = false [
-    if [patch-type] of patch-here = 2 [ ;; naive b cell exits LN
+    if patch-type = 2 [ ;; naive b cell exits LN
       set in-blood true
       hide-turtle
     ]
@@ -173,6 +186,9 @@ to naive-b-cell-function
     let antigen one-of bacteria-here
     if (apc != nobody and [presented-antigen] of apc != 0) or antigen != nobody[
       set breed activated-b-cells
+      set pro-breg 0
+      set shape "circle"
+      set size 1
       set color yellow
       set csr-bool false
       set time-alive 0
@@ -193,10 +209,12 @@ to naive-b-cell-function
       ]
     ]
 
+    check-breg-status
+
     chemotaxis
     move
 
-    if time-alive > 500 [
+    if time-alive > 400 [
       set s1pr1-level s1pr1-level + 0.5 ;; this slowly increases the # of s1p receptors (s1pr) in the naive b cell when the b-cell is old enough
     ]
   ]
@@ -208,9 +226,37 @@ to naive-b-cell-function
 
 end
 
+to check-breg-status
+  ifelse pro-breg > 00 [
+    set breed breg-cells
+    set size 1
+    set shape "circle"
+    set color violet
+    set s1pr1-level 0
+    set time-alive 0
+  ][
+    set pro-breg pro-breg + il6 + il21
+  ]
+
+
+
+end
+
+to breg-function
+  set il10 il10 + 5
+  set tgf-b tgf-b + 1
+  chemotaxis
+  move
+
+  set time-alive time-alive + 1
+  if time-alive > 300 [
+    die
+  ]
+end
+
 to activated-b-cell-function
   if in-blood = false [
-    if [patch-type] of patch-here = 2 [
+    if patch-type = 2 [
       set in-blood true
       hide-turtle
     ]
@@ -222,6 +268,8 @@ to activated-b-cell-function
     ][
       ti-response
     ]
+
+    check-breg-status
 
     chemotaxis
     move
@@ -243,20 +291,12 @@ to isotype-switch
       let igG-bucket 0
       let igE-bucket 0
 
-      let il4-here [il4] of patch-here
-      let il10-here [il10] of patch-here
-      let il12-here [il12] of patch-here
-      let il15-here [il15] of patch-here
-      let il21-here [il21] of patch-here
-      let ifa-here [if-a] of patch-here
-      let ifg-here [if-g] of patch-here
-      let tgfb-here [tgf-b] of patch-here
 
-      set igM-bucket il12-here + il15-here
+      set igM-bucket il12 + il15 + il6
       ;set igD-bucket   ;seems igD differentiation isnt stimulated by anything
-      set igA-bucket il10-here + il15-here + il21-here + tgfb-here
-      set igG-bucket il4-here + il10-here + il15-here + il21-here
-      set igE-bucket il4-here - il12-here - ifa-here - ifg-here - tgf-b + il21-here
+      set igA-bucket il10 + il15 + il21 + tgf-b
+      set igG-bucket il4 + il10 + il15 + il21
+      set igE-bucket il4 - il12 - if-a - if-g - tgf-b + il21
 
       let max_index 0
       let mylist (list 3 igM-bucket igA-bucket igG-bucket igE-bucket )
@@ -292,14 +332,21 @@ to td-response
   let th2 one-of th2-cells-here
   ifelse tfh != nobody [
     set breed gc-b-cells
+    set pro-breg 0
     set color red
+    set shape "circle"
+    set size 1
     set time-alive 0
     create-link-with tfh [ tie ]
     ask tfh [ set ebi2r-level 0 set ccr7-level 0 set bcell-binding-status true]
   ][
    if th2 != nobody [
+
      set breed gc-b-cells
+      set pro-breg 0
       set color red
+      set shape "circle"
+      set size 1
       set time-alive 0
       create-link-with th2 [ tie ]
       ask th2 [ set ebi2r-level 0 set ccr7-level 0 set bcell-binding-status true]
@@ -312,14 +359,16 @@ end
 
 to ti-response
   if counter mod 50 = 0 [
-    let proPC (il21 + il10) * 10000000
-    let proMem (il21 + il4) * 10;0
+    let proPC (il21 + il10 + if-a + if-g ) * 1000
+      let proMem (il21 + il4); * 100
     ;let rPC random proPC
     ;let rMem random proMem
-    ifelse proPC > proMem [
-      hatch-sl-plasma-cells 1 [ set time-alive 0 set color red set s1pr1-level 40]
-    ][
-      hatch-mem-b-cells 1 [set time-alive 0 set color white set shape "target" set s1pr1-level 40]
+    if time-alive mod 10 = 0 [
+      ifelse proPC > proMem [
+        hatch-sl-plasma-cells 1 [ set time-alive 0 set color red set shape "circle" set size 1 set s1pr1-level 0 set pro-breg 0]
+      ][
+        hatch-mem-b-cells 1 [set time-alive 0 set color white set shape "target" set s1pr1-level 40 set pro-breg 0]
+      ]
     ]
   ]
 end
@@ -328,10 +377,12 @@ end
 to gc-b-cell-function
 
   if in-blood = false [
-    if [patch-type] of patch-here = 2 [
+    if patch-type = 2 [
       set in-blood true
       hide-turtle
     ]
+
+    check-breg-status
 
     set ebi2r-level 0
     set ccr7-level 0
@@ -340,17 +391,17 @@ to gc-b-cell-function
       chemotaxis
       move
     ][
-      let proPC (il21 + il10) * 100
-      let proMem (il21 + il4) * 100
+      let proPC (il21 + il10 + if-a + if-g ) ;* 100
+      let proMem (il21 + il4) ;* 100
 ;     let rPC random proPC
 ;     let rMem random proMem
-      ifelse proPC > proMem [
-        if counter mod 10 = 0 [
-          hatch-ll-plasma-cells 1 [ set time-alive 0 set color green set s1pr1-level 40]
-        ]
-      ][
-        if counter mod 10 = 0 [
-          hatch-mem-b-cells 1 [ set time-alive 0 set color white set shape "target" set s1pr1-level 40]
+
+      set level-of-activation il2 + il4 + il10 + il15 + il21 - if-g - if-a
+      if round (time-alive mod (50 / level-of-activation)) = 0 [
+        ifelse proPC > proMem [
+          hatch-ll-plasma-cells 1 [ set time-alive 0 set color green set shape "circle" set size 1 set s1pr1-level 40 set pro-breg 0]
+        ][
+          hatch-mem-b-cells 1 [ set time-alive 0 set color white set shape "target" set s1pr1-level 40 set pro-breg 0]
         ]
       ]
     ]
@@ -364,39 +415,53 @@ to gc-b-cell-function
 end
 
 to sl-plasma-cell-function
-  if in-blood = false [
-
-    if [patch-type] of patch-here = 2 [
+  ifelse in-blood = false [
+    if patch-type = 2 [
       set in-blood true
       hide-turtle
     ]
-
+    check-breg-status
     chemotaxis
     move
+  ][
+    set level-of-activation il6
+    ;if round (time-alive mod (10 / level-of-activation)) = 0 [
+    if time-alive mod 10 = 0 [
+      hatch-antibodies 1
+
+    ]
   ]
 
   set time-alive time-alive + 1
-  if time-alive > 300 [
+  if time-alive > 300 + (il6 + il21) * 10 [
       die
   ]
 end
 
 
 to ll-plasma-cell-function
-  if in-blood = false [
+  ifelse in-blood = false [
 
-    if [patch-type] of patch-here = 2 [
+    if patch-type = 2 [
       ;set num-llpcs-in-blood num-llpcs-in-blood + 1
       set in-blood true
       hide-turtle
     ]
 
+    check-breg-status
+
     chemotaxis
     move
+  ][
+    set level-of-activation il6
+    ;if round (time-alive mod (50 / level-of-activation)) = 0 [
+    if time-alive mod 10 = 0 [
+      hatch-antibodies 1
+    ]
   ]
 
   set time-alive time-alive + 1
-  if time-alive > 1000 [
+  if time-alive > 1300 + (il6 + il21) * 10 [
       die
   ]
 
@@ -405,11 +470,13 @@ end
 
 to mem-b-cell-function
   if in-blood = false [
-     if [patch-type] of patch-here = 2 [
+     if patch-type = 2 [
       ;set num-llpcs-in-blood num-llpcs-in-blood + 1
       set in-blood true
       hide-turtle
     ]
+
+    check-breg-status
 
     chemotaxis
     move
@@ -444,12 +511,16 @@ to th0-cell-function
 
   ifelse th1-activation >= 20 [
     set breed TH1-cells
-    set color cyan
+    set color blue
     set time-alive 0
+    set size 1
+    set shape "circle"
   ][
     ifelse th2-activation >= 20 [
       set breed th2-cells
       set color blue
+      set size 1
+      set shape "circle"
       set time-alive 0
       set bcell-binding-status false
     ][
@@ -457,6 +528,8 @@ to th0-cell-function
         set breed tfh-cells
         set cxcr5-level 10
         set color cyan
+        set shape "circle"
+        set size 1
         set time-alive 0
         set bcell-binding-status false
       ]
@@ -482,7 +555,7 @@ to tfh-cell-function
   set il21 il21 + 2
   set il4 il4 + 1
   set il2 il2 + 1
-  set il10 il10 + 2
+  set il10 il10 + 1
 
   set time-alive time-alive + 1
   if time-alive > 500
@@ -494,6 +567,8 @@ end
 to th1-cell-function
   chemotaxis
   move
+
+  set if-g if-g + 1
 
   set time-alive time-alive + 1
   if time-alive > 500
@@ -508,7 +583,7 @@ to th2-cell-function
   ]
 
   set il4 il4 + 1
-  set il10 il10 + 2
+  set il10 il10 + 1
 
   set time-alive time-alive + 1
   if time-alive > 500 [
@@ -519,7 +594,7 @@ end
 
 to bacteria-function
   if in-blood = false [
-    if [patch-type] of patch-here = 2 [ ;; naive b cell exits LN
+    if patch-type = 2 [ ;; naive b cell exits LN
                                         ;set num-naive-b-cells-in-blood num-naive-b-cells-in-blood + 1
                                         ;die
       set in-blood true
@@ -574,7 +649,7 @@ to update-chemokine-gradient
 
     if patch-type = 0 [
       let total-cytokine-level il2 + il4 + il6 + il10 + il12 + il15 + il21 + tnf-a + tgf-b + if-a + if-g
-      ;set pcolor scale-color green s1p-level 0.1 3  ;;used to visualize cxcl13 or ccl19 gradient
+      ;set pcolor scale-color green total-cytokine-level 0.1 3  ;;used to visualize cxcl13 or ccl19 gradient
     ]
 
 
@@ -813,17 +888,6 @@ number-of-bacteria
 NIL
 HORIZONTAL
 
-MONITOR
-34
-208
-266
-253
-Naive B-cells in Blood
-count naive-b-cells with [in-blood = true]
-17
-1
-11
-
 SLIDER
 490
 173
@@ -848,7 +912,7 @@ IL-10
 IL-10
 0
 10
-2.0
+10.0
 1
 1
 NIL
@@ -863,7 +927,7 @@ IL-12
 IL-12
 0
 10
-1.0
+0.0
 1
 1
 NIL
@@ -878,7 +942,7 @@ IL-15
 IL-15
 0
 10
-2.0
+0.0
 1
 1
 NIL
@@ -893,7 +957,7 @@ IL-21
 IL-21
 0
 10
-10.0
+0.0
 1
 1
 NIL
@@ -908,7 +972,7 @@ IFN-alpha
 IFN-alpha
 0
 10
-8.0
+0.0
 1
 1
 NIL
@@ -944,17 +1008,6 @@ TGF-beta
 NIL
 HORIZONTAL
 
-MONITOR
-36
-158
-266
-203
-Total B-cells in Blood
-count turtles with [(breed = naive-b-cells or breed = mem-b-cells or breed = ll-plasma-cells or breed = activated-b-cells or breed = gc-b-cells) and in-blood = true ]
-17
-1
-11
-
 SLIDER
 329
 46
@@ -979,7 +1032,7 @@ number-of-TD-antigen
 number-of-TD-antigen
 0
 100
-33.0
+0.0
 1
 1
 NIL
@@ -994,7 +1047,7 @@ number-of-TI-antigen
 number-of-TI-antigen
 0
 100
-42.0
+74.0
 1
 1
 NIL
@@ -1017,8 +1070,63 @@ true
 "" ""
 PENS
 "LLPCs" 1.0 0 -16777216 true "" "plot count ll-plasma-cells with [in-blood = true]"
-"SLPCs" 1.0 0 -5298144 true "" "plot count sl-plasma-cells with [in-blood = true]"
+"SLPCs" 1.0 0 -5298144 true "" "plot count sl-plasma-cells"
 "Mem B-Cells" 1.0 0 -7500403 true "" "plot count mem-b-cells with [in-blood = true]"
+
+MONITOR
+20
+74
+301
+119
+NIL
+count naive-b-cells with [in-blood = true]
+17
+1
+11
+
+MONITOR
+19
+122
+297
+167
+NIL
+count turtles with [isotype = \"d\"]
+17
+1
+11
+
+MONITOR
+20
+171
+297
+216
+NIL
+count turtles with [isotype = \"e\"]
+17
+1
+11
+
+MONITOR
+18
+220
+295
+265
+NIL
+count turtles with [isotype = \"a\"]
+17
+1
+11
+
+MONITOR
+356
+203
+473
+248
+NIL
+count antibodies
+17
+1
+11
 
 @#$#@#$#@
 ## Description of the model
