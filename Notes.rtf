@@ -1,0 +1,268 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2580
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fswiss\fcharset0 Helvetica-Bold;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;}
+\margl1440\margr1440\vieww25400\viewh12800\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 Objects\
+	- B cells\
+		- Naive B cell\
+		- Activated B Cell\
+		- Short-lived Plasma B Cell (SLPC)\
+		- Long-lived Plasma B Cell (LLPC)\
+		- Memory B Cell\
+		- Germinal Center B Cell\
+	- Bacteria\
+Progression\
+	- Naive B Cell\
+		- Activated B Cell\
+			- SLPC\
+			- Mom B cell (NOTE, current state diagram does NOT include memory b cell as a possible t-independent response) (https://www.frontiersin.org/articles/10.3389/fimmu.2019.01787/full)\
+			- Germinal Center B Cell	\
+				- LLPC\
+				- SLPC\
+				Memory B Cell\
+\
+\
+Note: There are 3 main types of B cells\
+- Follicular B cells\
+	- We are focusing below on follicular B cells in follicles of LNs and spleen\
+- Marginal zone B cells\
+- B1 cells\
+\
+States\
+- Bacteria\
+	- Types of epitope present: \
+		- T-dependent antigen: Protein\
+		- T-independent antigen: LPS, repetitive epitopes \
+		- Natural antigen usually contains both t-dependent and t-independent components, so we see both occurring (https://www.jimmunol.org/content/198/10/3846#abstract-1)\
+	- Arrival at lymph node follicle\
+		- Can occur via lymph flow or via tissue-resident DC (https://www.researchgate.net/figure/Launching-the-immune-responseAntigens-can-reach-lymph-nodes-through-two-pathways-via_fig2_221904418)\
+- Follicular dendritic cells\
+	- Type of antigen it is presenting\
+		- Here, we will assume the FDC already is presenting an antigen at the time of setup. Normally, sub scapular macrophages survey the incoming lymph for antigen, consume them, and then transport them to the FDC in the LN follicle (https://www.frontiersin.org/articles/10.3389/fimmu.2016.00225/full)\
+	- FDC secretes IL4 and IL6 (IL6 is controversial) (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2366796/)\
+	- FDC secretes IL 15 (https://www.jimmunol.org/content/173/11/6676)\
+	- FDCs retain antigen for weeks (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2715076/)\
+		- this allows for more chances for b cell to encounter antigen, vs free-floating which leaves the follicle quickly\
+\
+- Naive B Cell\
+	- Strong signal: Based off the requirements below\
+		- Multivalently bound antigen: Yes or No\
+		- Toll-like Receptor bound: Yes or No\
+		- Complement receptor (CR2) bound: Yes or no\
+	- Weak signal:\
+		- Low valency antigen bound: Yes or No\
+	- Type of response to undergo: T-cell dependent or T-cell independent\
+		- if b cell activated by strong signal, does t-cell independent. if weak signal, t-cell dependent\
+		- note, b cells can be activated by binding to an FDC-bound-to-antigen or by phagocytosis of a free antigen (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6123646/)\
+	- Entry into lymph node/follicle\
+		- CXCR5: Expression of this receptor seems to be constant on B cells\
+			- Ligand is CXCL13, which is released by FDCs (follicNular dendritic cells) to localize B cells to follicle\
+				- Will assume FDC density is arbitrarily at ___, and are usually localized to center of follicle (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2366796/)\
+				- have them actually secrete the chemical\
+						- so we can block or manipulate the level\
+				- There is soluble (free moving) and insoluble (immobile) forms of CXCL13. most of it is in the immobile form, depending on level of Cap-B, which converts immobile to soluble form (https://www.nature.com/articles/s41467-020-17135-2#Sec7)\
+	- Exit from lymph node\
+		- S1PR1 receptor: integer value (increases with time)\
+			- Note: This is what determines when the B cell leaves the lymph node and move on to new tissue if it doesn\'92t encounter an antigen. The ligand is S1P, which is high in blood/lymph fluid and low in lymph node tissue\
+			- If the B cell is not activated within a few hours, this level increases to facilitate B cell exit from lymph node\
+				- can simply have the b cell disappear, rather than responding to the s1p\
+					- simply use s1p receptor as a counter, and b cell disappears when the s1p reaches a high enough level\
+	- BCR Isotype: IgM and IgD\
+		- Coexpresse on naive b cells (https://www.frontiersin.org/articles/10.3389/fimmu.2019.01787/full)\
+\
+\
+\
+\
+- Activated B Cell\
+	- Type of response: T cell dependent or T-cell independent	\
+		- Only t-cell dependent response can result in germinal center creation\
+		- T independent responses normally result in SLPC differentiation\
+	- Migration to T/B zone border during T-dependent response\
+		- Level of CCR7 expressed on membrane: Normal or elevated\
+			- Note, CCR7 ligand (CCL19, CCL21) is released constitutively by fibroblastic reticular cells (FRCs) located in the T zone (paracortex) of lymph nodes. The increased CCR7 expression allows B-cells to migrate to the B/T-zone border to get T-cell help. CCR7 and EBI2 receptor are unregulated after BCR stimulation\
+		- Level of EBI2 receptor expressed on membrane: Normal or elevated\
+			- Note: Similar to CCR7 ligand, EBI2 is released by cells in paracortex constitutively to help B cells migrate to B/T border\
+\
+	- Dividing status: Not dividing, # of divisions/proliferations\
+		- A certain number of divisions is required to then undergo isotope switching\
+	- New BCR type (after isotope switching): IgG, IgA, IgE\
+		- IgG: Stimulated by IL4, IL10, IL13, IL21, \
+		- IgA: Stimulated by IL10 + TGF-beta, IL21\
+		- IgE: Stimulated by IL4, IL13, \
+	- S1PR1 receptor: Normal, elevated, or decreased\
+		- Should decrease after activation to prevent B cell from leaving\
+			- UNSURE IF THIS VALUE ACTUALLY DECREASES, OR IF UPREGULATION OF S1P2 after activation prevents this from working\
+	- ICOSL (ICOS ligand) levels: low or high\
+		- Interacts with ICOS on helper T cell\
+		- This interaction supports GC differentiation\
+	- PDL1/PDL2 levels: Low or high\
+		- Interact with PD1 on Tfh cells to antagonize GC differentiation\
+	- IL-9 receptor\
+		- Increased IL-9 receptor expression is associated with differentiation into memory B cell\
+	- Bcl-\
+		- Favors GC differentiation, blocks PC differentiation by surprising BLIMP-1\
+		- Expression induced by IL-21 and il 4 (https://pubmed.ncbi.nlm.nih.gov/28875978/#:~:text=germinal%20center%20formation-,IL4%20and%20IL21%20cooperate%20to%20induce%20the%20high%20Bcl6%20protein,Immunol%20Cell%20Biol.)\
+	- BLIMP-1\
+		- Supports PC differentiation\
+		- Expression induced by IL-21, IL10, \
+	- High affinity antigen interactions\
+		- leads to SLPC differentaiotn\
+	- IgE BCR after CSR\
+		- increases odds of becoming SLPC\
+	- Low affinity antigen interaction\
+		- leads to germinal center differentiation\
+	- CD40 stimulation\
+		- Weak CD40 stimulation by helper T cells lead to SLPC differentiation over GC\
+	- Isotype after CSR\
+		- Influened by various cytokines\
+	\
+\
+Tfh cell\
+- Provides CD40, ICOSL, and ICAM1/2 to B cells\
+- CXCR5 receptor level\
+	- Pulls towards follicle center\
+- CCR7 receptor level\
+	- Pulls towards its normal location, the paracortex\
+- Secretes cytokines IL-21 and IL-4 (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5110032/)\
+- Activated T helper cells secrete IL2 (https://www.jimmunol.org/content/172/7/3983)\
+- may also secrete il10 (https://www.jimmunol.org/content/198/1_Supplement/122.2#:~:text=Additional%20analyses%20identified%20that%20IL,B%20cells%20during%20chronic%20infection.)\
+- primary stimulus for TH0 -> TFH seems to be IL21 and IL12 (picture from https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4223692/)\
+\
+TH0\
+- localize via ccr7 and ebi2, same with th1 and th2 (none of these have CXCR5, except for tfh)\
+\
+TH1\
+- NOT involved in b cell response\
+- Activated by IL-12\
+	- To secrete IFN-g by the amount of IL-12 + TNF + IL-1 (from IIRABM)\
+\
+\
+TH2\
+- can also aid in T-dependent b cell response\
+- Activated by IL-10\
+	- To secrete IL-4 by the amount of IL-10  as well as secrete IL-10 by the amount of IL-10 (from IIRABM)\
+\
+\
+\
+Germinal Center B cell\
+- Chemotactic receptors\
+	- EBI2 receptor and CCR7\
+		- Downregulated in GC b cells, so cells localize to follicle center again\
+	- S1P2 receptor (haven\'92t implemented this yet)\
+		- Upregulated in GC b cells\
+		- Inhibits migration towards S1P, so prevents GC b cells from leaving\
+- IgE, IgA, or IgG after CSR\
+	- Promotes differentiation into LLPC (https://www.frontiersin.org/articles/10.3389/fimmu.2019.01787/full)\
+\
+\
+LLPC\
+- S1PR1\
+	- unregulated so that the cell leaves the lymph node and enters blood stream, eventually going to the BONE MARROW\
+\
+\
+\
+B-cell signals from B cell overview (nature)\
+- B-T interactions (respectively\
+	- ICAM1 and ICAM 2 \'97 LFA1 integrin\
+		- Allows B cell and T cell to interac\
+- GC response\
+	- increased # of MHC II expressed on B cell strengthens B-T response\
+	- Tfh cell LFA1 binds to B-cell ICAM1 and ICAM 2, helps augment B-T interaction \
+	- Tfh cell ICOSL binding to B-cell ICOS is important for GC development\
+	- \
+- Tfh cell chemotaxis\
+	- Normally have high CCR7/EBI2 to localize to paracortex\
+	- After tfh binds to b cell, begins to down regulate CCR7 and EBI2\
+		- Tfh CXCR5 begins to pull it back, along w/ the b cell, to center of follicle\
+		- Both tfh and activated b cell also upregulates the S1PR-2 receptor to inhibit S1P pull\
+\
+\
+\
+ILs and their functions (from
+\fs21\fsmilli10600  
+\f1\b \cf2 \expnd0\expndtw0\kerning0
+B cells responses and cytokine production are regulated by their immune microenvironment 
+\f0\b0 \
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f1\b \cf2 Monica I. Vazquez
+\f0\b0 \up8 a,b\up0 , 
+\f1\b Jovani Catalan-Dibene
+\f0\b0 \up8 a,b\up0 , and 
+\f1\b Albert Zlotnik
+\f0\b0 \up8 a,b\up0 ) 
+\fs24 \cf0 \kerning1\expnd0\expndtw0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 	IL-4\
+	- Secretd by Th1 cells, but in GCs, also secreted by Tfh cells (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5110032/#:~:text=Apart%20from%20Th2%20cells%2C%20Tfh,cells%20%5B12%2C%2015%5D.)\
+	- Functions on B cells\
+		- B cell growth factor (stimulates proliferation)\
+		- Acts synergistically with CD40\
+		- Preferentially stimulates IgE and IgG secretion\
+		- induces MHC II expression\
+\
+	IL-10\
+	- Unclear from this document\
+\
+	IFN-gamma stimulates CSR to IgG2a or IgG2c\
+	\
+\
+B-regs\
+- any cells can differentiate into b-reg cells that secrete IL10 and TGF-beta (https://www-sciencedirect-com.ezp.med.uvm.edu/science/article/pii/S107476131500134X)\
+	\
+\
+\
+Cytokine Secretion\
+- FDCs\
+	- CXCL13\
+	- IL4\
+	- IL6\
+	- IL15\
+- TFH\
+	- IL2\
+	- IL4\
+	- IL10\
+	- IL21\
+- TH1\
+- TH2\
+	- IL4\
+	- IL10\
+\
+\
+Questions\
+- FIX THE TURNING WHEN TWO TURNS ARE IN SAME DIRECTION (THEY ADD RN, which is bad)\
+\
+\
+\
+Updates\
+- Will get innate immune response\
+- B cells acting as antigen presenting cells\
+	- Check this, see if b cells act as APCs with the free floating antigen\
+- for fuzzy things, get a list to get\
+- abstract deadline on august 19th, so we want enough of project done\
+	- want to get enough done by august\
+- check if b cells are in the blood as well\
+- scihub for free pirated aces\
+- add circulating component, maybe just track what comes out the lymph\
+	- don\'92t need to physically represent, just track data so we can graph\
+\
+\
+Include surface receptor (primary, simplest set of surface markers for each breed)\
+check if mom b cells come from first or second\
+check if isotype has a relationship with blimp or bcl6 expression\
+study textbooks to see fork of t-independent fork into slpc or mem-b cells\
+we are only interested in IgM and IgG\
+check if FDCs secrete any of those cytokines\
+\
+Sources:\
+- https://www.jimmunol.org/content/198/10/3846\
+	- used for t-independent vs t-dependent B cell response\
+- https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2877811/\
+	- used for b cell migration to B/T cell border after activation\
+- https://www.frontiersin.org/articles/10.3389/fimmu.2014.00065/full\
+	- used for BLIMP-1 and Bcl-9, isotope switching determination by ILs, overall cytokine functions, \
+https://www.frontiersin.org/articles/10.3389/fimmu.2018.02469/full\
+	- overall GC reaction mechanics and regulation}
