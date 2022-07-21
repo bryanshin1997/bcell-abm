@@ -153,6 +153,7 @@ to fdc-function
   set il4 il4 + 1
   set il6 il6 + 2
   set il15 il15 + 2
+  set il12 il12 + 2
 
   if presented-antigen != 0 [
     set time-presenting time-presenting + 1
@@ -167,7 +168,7 @@ end
 
 to antibodies-function
    set time-alive time-alive + 1
-  if time-alive > 400 [
+  if time-alive > 1000 [
     die
   ]
 end
@@ -197,8 +198,10 @@ to naive-b-cell-function
         let rTD random [num-TD-ag] of antigen
         ifelse rTI > rTD [
           set response-type 1
+          print 1
         ][
           set response-type 2   ; 2 is TD
+          print 2
         ]
 
         ask antigen [ die ]
@@ -227,7 +230,7 @@ to naive-b-cell-function
 end
 
 to check-breg-status
-  ifelse pro-breg > 00 [
+  ifelse pro-breg > 30 [
     set breed breg-cells
     set size 1
     set shape "circle"
@@ -277,7 +280,7 @@ to activated-b-cell-function
   ]
 
   set time-alive time-alive + 1
-  if time-alive > 500 [
+  if time-alive > 300 [
     die
   ]
 end
@@ -333,7 +336,7 @@ to td-response
   ifelse tfh != nobody [
     set breed gc-b-cells
     set pro-breg 0
-    set color red
+    set color orange
     set shape "circle"
     set size 1
     set time-alive 0
@@ -344,7 +347,7 @@ to td-response
 
      set breed gc-b-cells
       set pro-breg 0
-      set color red
+      set color orange
       set shape "circle"
       set size 1
       set time-alive 0
@@ -359,13 +362,13 @@ end
 
 to ti-response
   if counter mod 50 = 0 [
-    let proPC (il21 + il10 + if-a + if-g ) * 1000
+    let proPC (il21 + il10 + if-a + if-g ) * 10
       let proMem (il21 + il4); * 100
     ;let rPC random proPC
     ;let rMem random proMem
-    if time-alive mod 10 = 0 [
+    if time-alive mod 1 = 0 [
       ifelse proPC > proMem [
-        hatch-sl-plasma-cells 1 [ set time-alive 0 set color red set shape "circle" set size 1 set s1pr1-level 0 set pro-breg 0]
+        hatch-sl-plasma-cells 1 [ set time-alive 0 set color lime + 3 set shape "circle" set size 1 set s1pr1-level 0 set pro-breg 0]
       ][
         hatch-mem-b-cells 1 [set time-alive 0 set color white set shape "target" set s1pr1-level 40 set pro-breg 0]
       ]
@@ -387,19 +390,19 @@ to gc-b-cell-function
     set ebi2r-level 0
     set ccr7-level 0
 
-    ifelse distance patch 0 0 > 20 [
+    ifelse distance patch 0 0 > 10 [
       chemotaxis
       move
     ][
-      let proPC (il21 + il10 + if-a + if-g ) ;* 100
+      let proPC (il21 + il10 + if-a + if-g ) * 10
       let proMem (il21 + il4) ;* 100
 ;     let rPC random proPC
 ;     let rMem random proMem
 
       set level-of-activation il2 + il4 + il10 + il15 + il21 - if-g - if-a
-      if round (time-alive mod (50 / level-of-activation)) = 0 [
+      if round (time-alive mod (30 / level-of-activation)) = 0 [
         ifelse proPC > proMem [
-          hatch-ll-plasma-cells 1 [ set time-alive 0 set color green set shape "circle" set size 1 set s1pr1-level 40 set pro-breg 0]
+          hatch-ll-plasma-cells 1 [ set time-alive 0 set color lime set shape "circle" set size 1 set s1pr1-level 40 set pro-breg 0]
         ][
           hatch-mem-b-cells 1 [ set time-alive 0 set color white set shape "target" set s1pr1-level 40 set pro-breg 0]
         ]
@@ -408,6 +411,7 @@ to gc-b-cell-function
   ]
   set time-alive time-alive + 1
   if time-alive > 400 [
+    ask link-neighbors [ set bcell-binding-status false ]
     die
   ]
 
@@ -415,7 +419,7 @@ to gc-b-cell-function
 end
 
 to sl-plasma-cell-function
-  ifelse in-blood = false [
+  if in-blood = false [
     if patch-type = 2 [
       set in-blood true
       hide-turtle
@@ -423,14 +427,13 @@ to sl-plasma-cell-function
     check-breg-status
     chemotaxis
     move
-  ][
-    set level-of-activation il6
-    ;if round (time-alive mod (10 / level-of-activation)) = 0 [
-    if time-alive mod 10 = 0 [
-      hatch-antibodies 1
-
-    ]
   ]
+
+  set level-of-activation il6
+    ;if round (time-alive mod (10 / level-of-activation)) = 0 [
+    if time-alive mod 50 = 0 [
+      hatch-antibodies 1 [ set time-alive 0 set antibody-type isotype set hidden? true ]
+    ]
 
   set time-alive time-alive + 1
   if time-alive > 300 + (il6 + il21) * 10 [
@@ -455,13 +458,13 @@ to ll-plasma-cell-function
   ][
     set level-of-activation il6
     ;if round (time-alive mod (50 / level-of-activation)) = 0 [
-    if time-alive mod 10 = 0 [
-      hatch-antibodies 1
+    if time-alive mod 50 = 0 [
+      hatch-antibodies 1 [ set time-alive 0 set antibody-type isotype set hidden? true  ]
     ]
   ]
 
   set time-alive time-alive + 1
-  if time-alive > 1300 + (il6 + il21) * 10 [
+  if time-alive > 3000 + (il6 + il21) * 10 [
       die
   ]
 
@@ -532,6 +535,7 @@ to th0-cell-function
         set size 1
         set time-alive 0
         set bcell-binding-status false
+        set cxcr5-level 10
       ]
     ]
   ]
@@ -668,20 +672,22 @@ to inoculate
     set time-presenting 0
     set presented-antigen bacteria-epitope-type
    ;set color 15 + (presented-antigen - 1) * 30
-    set color green
+    set color red
 
-    let rTI random number-of-TI-antigen
-    let rTD random number-of-TD-antigen
+    let rTI random number-of-TI-epitopes
+    let rTD random number-of-TD-epitopes
     ifelse rTI > rTD [
       set presented-antigen-type 1   ;; 1 is TI
+      print 1
     ][
       set presented-antigen-type 2    ;; 2 is TD
+      print 2
     ]
   ]
 
   create-bacteria free-floating-bacteria-number [                            ;; Creates bacteria. "number-of-bacteria" is a variable controlled by an interface slider
     ;set color 15 + (bacteria-epitope-type - 1) * 30               ;; Sets the color of the bacteria based on epitope type. Uses netlogo's 0-139 color scale (integer values)
-    set color green
+    set color red
     set shape "bug"
     set size 2
     setxy 49 0
@@ -689,8 +695,8 @@ to inoculate
     set time-alive 0
     set in-blood false
     set epitope-type bacteria-epitope-type                        ;; Sets the bacteria's epitope-type. "bacteria-epitope-type" is a value is from an interface slider
-    set num-TI-ag number-of-TI-antigen
-    set num-TD-ag number-of-TD-antigen
+    set num-TI-ag number-of-TI-epitopes
+    set num-TD-ag number-of-TD-epitopes
   ]
 end
 
@@ -778,21 +784,21 @@ to move
 end
 
 to insert-cytokines
-  if mouse-down?     ;; reports true or false to indicate whether mouse button is down
-    [
-      ask patch mouse-xcor mouse-ycor [
-        ask patches in-radius 3 [
-          set il4 il-4
-          set il10 il-10
-          set il12 il-12
-          set il15 il-15
-          set il21 il-21
-          set if-a ifn-alpha
-          set if-g ifn-gamma
-          set tgf-b tgf-beta
-        ]
-      ]
-    ]
+;  if mouse-down?     ;; reports true or false to indicate whether mouse button is down
+;    [
+;      ask patch mouse-xcor mouse-ycor [
+;        ask patches in-radius 3 [
+;          set il4 il-4
+;          set il10 il-10
+;          set il12 il-12
+;          set il15 il-15
+;          set il21 il-21
+;          set if-a ifn-alpha
+;          set if-g ifn-gamma
+;          set tgf-b tgf-beta
+;        ]
+;      ]
+;    ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -882,127 +888,7 @@ number-of-bacteria
 number-of-bacteria
 0
 50
-8.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-490
-173
-662
-206
-IL-4
-IL-4
-0
-10
-0.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-490
-208
-662
-241
-IL-10
-IL-10
-0
-10
-10.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-490
-243
-662
-276
-IL-12
-IL-12
-0
-10
-0.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-490
-278
-662
-311
-IL-15
-IL-15
-0
-10
-0.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-490
-313
-662
-346
-IL-21
-IL-21
-0
-10
-0.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-490
-349
-662
-382
-IFN-alpha
-IFN-alpha
-0
-10
-0.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-490
-385
-662
-418
-IFN-gamma
-IFN-gamma
-0
-10
-0.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-490
-420
-662
-453
-TGF-beta
-TGF-beta
-0
-10
-0.0
+30.0
 1
 1
 NIL
@@ -1028,11 +914,11 @@ SLIDER
 81
 529
 114
-number-of-TD-antigen
-number-of-TD-antigen
+number-of-TD-epitopes
+number-of-TD-epitopes
 0
-100
-0.0
+10
+5.0
 1
 1
 NIL
@@ -1043,22 +929,22 @@ SLIDER
 116
 527
 149
-number-of-TI-antigen
-number-of-TI-antigen
+number-of-TI-epitopes
+number-of-TI-epitopes
 0
-100
-74.0
+10
+5.0
 1
 1
 NIL
 HORIZONTAL
 
 PLOT
-38
-255
-391
-460
-plot 1
+256
+168
+667
+449
+Ag-Specific B-Cell Populations
 NIL
 NIL
 0.0
@@ -1074,55 +960,11 @@ PENS
 "Mem B-Cells" 1.0 0 -7500403 true "" "plot count mem-b-cells with [in-blood = true]"
 
 MONITOR
-20
-74
-301
-119
-NIL
-count naive-b-cells with [in-blood = true]
-17
-1
-11
-
-MONITOR
-19
-122
-297
-167
-NIL
-count turtles with [isotype = \"d\"]
-17
-1
-11
-
-MONITOR
-20
-171
-297
-216
-NIL
-count turtles with [isotype = \"e\"]
-17
-1
-11
-
-MONITOR
-18
-220
-295
-265
-NIL
-count turtles with [isotype = \"a\"]
-17
-1
-11
-
-MONITOR
-356
-203
-473
+33
 248
-NIL
+222
+293
+Total Ag-Specific Antibodies
 count antibodies
 17
 1

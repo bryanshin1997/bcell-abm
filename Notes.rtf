@@ -235,6 +235,13 @@ Cytokine Secretion\
 Questions\
 - FIX THE TURNING WHEN TWO TURNS ARE IN SAME DIRECTION (THEY ADD RN, which is bad)\
 - DONT yet have IL6 stimulating antibody secretion rate of llpcs and slpcs\
+- For some reason, during one run of TI response, we saw LLPC. why???\
+- Need to fix interacting b-t cells after one of them dies during gc reaction\
+-\
+\
+- How to calibrate? Right now, for ex, with just cytokines and no scaling, ti and gc reaction produces way too many mem b cells compared to plasma cells, so i added a scaling to make pc fate more likely. is this ok, or do i need to play around with cytokines more?\
+- How to handle memory b cells for 2nd exposure response? for ex, should they leave the follicle and just come right back into the ln? they need to be in the ln follicle to respond to 2nd exposure.\
+	- Also, should we incorporate some type of epitope specificity in BCRs? that will highlight the increased response to a 2nd exposure. \
 \
 \
 Updates\
@@ -251,9 +258,6 @@ Updates\
 \
 \
 Include surface receptor (primary, simplest set of surface markers for each breed)\
-check if mom b cells come from first or second\
-check if isotype has a relationship with blimp or bcl6 expression\
-study textbooks to see fork of t-independent fork into slpc or mem-b cells\
 we are only interested in IgM and IgG\
 check if FDCs secrete any of those cytokines\
 \
