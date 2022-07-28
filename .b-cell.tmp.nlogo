@@ -14,7 +14,7 @@ breed [th1-cells th1-cell]
 breed [th2-cells th2-cell]
 
 
-turtles-own [ in-blood bcr isotype csr-bool time-alive s1pr1-level s1pr2-level cxcr5-level ccr7-level ebi2r-level pro-breg level-of-activation]
+turtles-own [ in-blood bcr isotype csr-bool time-alive s1pr1-level s1pr2-level cxcr5-level ccr7-level ebi2r-level pro-breg level-of-activation tnf-a-stimulation]
 activated-b-cells-own [ response-type ]
 antibodies-own [antibody-type]
 bacteria-own [ epitope-type num-TI-ag num-TD-ag ]
@@ -168,7 +168,7 @@ end
 
 to antibodies-function
    set time-alive time-alive + 1
-  if time-alive > 1000 [
+  if time-alive > 1200 [
     die
   ]
 end
@@ -217,10 +217,12 @@ to naive-b-cell-function
     chemotaxis
     move
 
-    if time-alive > 400 [
+    if time-alive > 500 [
       set s1pr1-level s1pr1-level + 0.5 ;; this slowly increases the # of s1p receptors (s1pr) in the naive b cell when the b-cell is old enough
     ]
   ]
+
+  check-tnf-status
 
   set time-alive time-alive + 1
   if time-alive > 1000 [
@@ -230,7 +232,7 @@ to naive-b-cell-function
 end
 
 to check-breg-status
-  ifelse pro-breg > 30 [
+  ifelse pro-breg > 400 [
     set breed breg-cells
     set size 1
     set shape "circle"
@@ -245,11 +247,21 @@ to check-breg-status
 
 end
 
+to check-tnf-status
+  set tnf-a-stimulation tnf-a-stimulation + tnf-a
+  if tnf-a-stimulation > 60 [
+    print "apoptose"
+    die
+  ]
+end
+
 to breg-function
   set il10 il10 + 5
   set tgf-b tgf-b + 1
   chemotaxis
   move
+
+  check-tnf-status
 
   set time-alive time-alive + 1
   if time-alive > 300 [
@@ -278,6 +290,8 @@ to activated-b-cell-function
     move
 
   ]
+
+  check-tnf-status
 
   set time-alive time-alive + 1
   if time-alive > 300 [
@@ -361,8 +375,9 @@ to td-response
 end
 
 to ti-response
+  set tnf-a tnf-a + 1
   if counter mod 50 = 0 [
-    let proPC (il21 + il10 + if-a + if-g ) * 10
+    let proPC (il21 + il10 + if-a + if-g )
       let proMem (il21 + il4); * 100
     ;let rPC random proPC
     ;let rMem random proMem
@@ -392,9 +407,9 @@ to gc-b-cell-function
 
     ifelse distance patch 0 0 > 10 [
       chemotaxis
-      move
+      gc-move
     ][
-      let proPC (il21 + il10 + if-a + if-g ) * 10
+      let proPC (il21 + il10 + if-a + if-g )
       let proMem (il21 + il4) ;* 100
 ;     let rPC random proPC
 ;     let rMem random proMem
@@ -409,6 +424,9 @@ to gc-b-cell-function
       ]
     ]
   ]
+
+  check-tnf-status
+
   set time-alive time-alive + 1
   if time-alive > 400 [
     ask link-neighbors [ set bcell-binding-status false ]
@@ -435,8 +453,10 @@ to sl-plasma-cell-function
       hatch-antibodies 1 [ set time-alive 0 set antibody-type isotype set hidden? true ]
     ]
 
+  check-tnf-status
+
   set time-alive time-alive + 1
-  if time-alive > 300 + (il6 + il21) * 10 [
+  if time-alive > 240 + (il6 + il21) * 10 [
       die
   ]
 end
@@ -458,13 +478,16 @@ to ll-plasma-cell-function
   ][
     set level-of-activation il6
     ;if round (time-alive mod (50 / level-of-activation)) = 0 [
-    if time-alive mod 50 = 0 [
+    if time-alive mod 200 = 0 [
       hatch-antibodies 1 [ set time-alive 0 set antibody-type isotype set hidden? true  ]
     ]
   ]
 
+
+  check-tnf-status
+
   set time-alive time-alive + 1
-  if time-alive > 3000 + (il6 + il21) * 10 [
+  if time-alive > 8000 + (il6 + il21) * 10 [
       die
   ]
 
@@ -485,8 +508,10 @@ to mem-b-cell-function
     move
   ]
 
+  check-tnf-status
+
   set time-alive time-alive + 1
-  if time-alive > 1000 [
+  if time-alive > 15000 [
     die
   ]
 
@@ -665,6 +690,10 @@ end
 
 ;This function is called when the user clicks the "inoculate" button in the interface. It adds bacteria into the system
 to inoculate
+
+  ask patches [ set tnf-a tnf-a + (number-of-bacteria / 10) ]
+  ask patches [ set il6 il6 + (number-of-bacteria / 4) ]
+
   let free-floating-bacteria-number random ( number-of-bacteria )
   let fdc-captured-bacteria-number number-of-bacteria - free-floating-bacteria-number
 
@@ -678,10 +707,8 @@ to inoculate
     let rTD random number-of-TD-epitopes
     ifelse rTI > rTD [
       set presented-antigen-type 1   ;; 1 is TI
-      print 1
     ][
       set presented-antigen-type 2    ;; 2 is TD
-      print 2
     ]
   ]
 
@@ -783,6 +810,12 @@ to move
   fd 1
 end
 
+to gc-move
+  rt random 50
+  lt random 50
+  fd 0.5
+end
+
 to insert-cytokines
 ;  if mouse-down?     ;; reports true or false to indicate whether mouse button is down
 ;    [
@@ -804,11 +837,11 @@ end
 GRAPHICS-WINDOW
 683
 10
-1117
-445
+1133
+461
 -1
 -1
-4.22
+4.38
 1
 10
 1
@@ -888,7 +921,7 @@ number-of-bacteria
 number-of-bacteria
 0
 50
-30.0
+50.0
 1
 1
 NIL
@@ -903,7 +936,7 @@ bacteria-epitope-type
 bacteria-epitope-type
 1
 30
-1.0
+26.0
 1
 1
 NIL
@@ -918,7 +951,7 @@ number-of-TD-epitopes
 number-of-TD-epitopes
 0
 10
-5.0
+10.0
 1
 1
 NIL
@@ -933,17 +966,17 @@ number-of-TI-epitopes
 number-of-TI-epitopes
 0
 10
-5.0
+10.0
 1
 1
 NIL
 HORIZONTAL
 
 PLOT
-256
-168
-667
-449
+244
+158
+656
+439
 Ag-Specific B-Cell Populations
 NIL
 NIL
@@ -955,20 +988,46 @@ true
 true
 "" ""
 PENS
-"LLPCs" 1.0 0 -16777216 true "" "plot count ll-plasma-cells with [in-blood = true]"
-"SLPCs" 1.0 0 -5298144 true "" "plot count sl-plasma-cells"
+"LLPCs" 1.0 0 -14439633 true "" "plot count ll-plasma-cells with [in-blood = true]"
+"SLPCs" 1.0 0 -8330359 true "" "plot count sl-plasma-cells"
 "Mem B-Cells" 1.0 0 -7500403 true "" "plot count mem-b-cells with [in-blood = true]"
+"Total B Lymphocytes" 1.0 0 -2674135 true "" "plot (count mem-b-cells with [in-blood = true]) + (count ll-plasma-cells with [in-blood = true]) + (count sl-plasma-cells )"
 
-MONITOR
-33
-248
-222
-293
-Total Ag-Specific Antibodies
-count antibodies
-17
-1
-11
+PLOT
+24
+122
+224
+272
+Antibody Response Curve
+NIL
+Ab Level
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot count antibodies"
+
+PLOT
+29
+331
+229
+481
+IL-10 Production
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot sum ([il10] of patches)"
 
 @#$#@#$#@
 ## Description of the model

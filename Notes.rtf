@@ -1,7 +1,9 @@
 {\rtf1\ansi\ansicpg1252\cocoartf2580
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fswiss\fcharset0 Helvetica-Bold;}
-{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
-{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;}
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red35\green35\blue35;\red30\green30\blue30;
+\red245\green245\blue245;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\cssrgb\c18039\c18039\c18039;\cssrgb\c15686\c15686\c15686;
+\cssrgb\c96863\c96863\c96863;}
 \margl1440\margr1440\vieww25400\viewh12800\viewkind0
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
@@ -181,20 +183,10 @@ B-cell signals from B cell overview (nature)\
 \
 \
 \
-ILs and their functions (from
-\fs21\fsmilli10600  
-\f1\b \cf2 \expnd0\expndtw0\kerning0
-B cells responses and cytokine production are regulated by their immune microenvironment 
-\f0\b0 \
+ILs and their functions (from \cf2 \expnd0\expndtw0\kerning0
+B cells responses and cytokine production are regulated by their immune microenvironment \
 \pard\pardeftab720\sa240\partightenfactor0
-
-\f1\b \cf2 Monica I. Vazquez
-\f0\b0 \up8 a,b\up0 , 
-\f1\b Jovani Catalan-Dibene
-\f0\b0 \up8 a,b\up0 , and 
-\f1\b Albert Zlotnik
-\f0\b0 \up8 a,b\up0 ) 
-\fs24 \cf0 \kerning1\expnd0\expndtw0 \
+\cf2 Monica I. Vazquez\up8 a,b\up0 , Jovani Catalan-Dibene\up8 a,b\up0 , and Albert Zlotnik\up8 a,b\up0 ) \cf0 \kerning1\expnd0\expndtw0 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf0 	IL-4\
 	- Secretd by Th1 cells, but in GCs, also secreted by Tfh cells (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5110032/#:~:text=Apart%20from%20Th2%20cells%2C%20Tfh,cells%20%5B12%2C%2015%5D.)\
@@ -212,6 +204,7 @@ B cells responses and cytokine production are regulated by their immune microenv
 \
 B-regs\
 - any cells can differentiate into b-reg cells that secrete IL10 and TGF-beta (https://www-sciencedirect-com.ezp.med.uvm.edu/science/article/pii/S107476131500134X)\
+Stimulated by IL6, IL21 (https://www.cell.com/immunity/fulltext/S1074-7613(15)00134-X?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS107476131500134X%3Fshowall%3Dtrue)\
 	\
 \
 \
@@ -230,6 +223,80 @@ Cytokine Secretion\
 - TH2\
 	- IL4\
 	- IL10\
+- B cells\
+	- Secrete TNF-alpha after TI BCR engagement (https://www.frontiersin.org/articles/10.3389/fimmu.2018.01285/full)\
+- Note, FDCs do NOT secrete TNF-alpha. They only respond to TNF-alpha\
+\
+maybe 10 ticks per day?\
+1 tick is 30 minutes\
+IIRABM used 6 min per tick\
+\
+\
+Timeline\
+- half life of naive b cells is 13-22 weeks (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4637268/#:~:text=Given%20that%20the%20accepted%20half,lifespans%20than%20their%20na%C3%AFve%20counterparts.)\
+	- they move 6 micrometers per minute, every tick they move 2 (36 micrometers) patches\
+	- normal lymph node follicle diameter is 2 mm ( \cf3 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec3 IMMUNE-LYMPHATIC SYSTEM Abraham L.\'a0Kierszenbaum\'a0M.D., Ph.D., in\'a0Histology and Cell Biology: An Introduction to Pathology, 2020)\
+		- world is 100 patches wide, so each patch is 20 micrometers\
+		\cf0 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 \
+- Ag specific memory b cell half life is around 100-500 days (same source as naive b cell half life source)\
+	- 300 day half life is 432 day lifespan\
+- SLPC lifespan is 3-5 days, or 240 ticks (https://www.frontiersin.org/articles/10.3389/fimmu.2019.00721/full#:~:text=Plasma%20cells%20can%20be%20generally,of%20several%20months%20to%20lifetime).)\
+- LLPC lifespan is several months to years (6 months is around 8000 ticks) (https://www.frontiersin.org/articles/10.3389/fimmu.2019.00721/full#:~:text=Plasma%20cells%20can%20be%20generally,of%20several%20months%20to%20lifetime).)\
+- Formation of GC takes 7-14 days (https://www.mdpi.com/2073-4409/10/7/1736/htm)\
+- Ab half-life is 26 days (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3291529/)\
+\
+\
+\
+How to represent sepsis?\
+- Incoming lymph fluid with composition of elevated TNF-alpha (most important), IL 6, and IL1 (https://pubmed.ncbi.nlm.nih.gov/23147180/)\
+\
+\
+B-Cell Exhaustion\
+- Main Frontiers Paper (\cf4 \cb5 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec4 Polymicrobial Sepsis Chronic Immunoparalysis Is Defined by Diminished Ag-Specific T Cell-Dependent B Cell Responses\cf0 \cb1 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 )\
+	- Decreased total number B cell count after sepsis\
+	- Decreased Ag-specific B cell count from vaccination after sepsis induction\
+	- Decreased Tfh cells after sepsis and vaccination\
+	- Decreased Ab production after sepsis after challenging the mouse with antigen\
+- \cf2 \expnd0\expndtw0\kerning0
+Septic Shock Shapes B Cell Response toward an Exhausted-like/Immunoregulatory Profile in Patients, Gustave\
+	- B cells were identified via the CD19 surface marker\
+	- Measured expression of B cell HLA-DR\
+	- Exhaustion was measured via expression of CD21 (low in exhaustion) and CD95 (high in exhaustion)\
+		- CD21 measures exhaustion, while CD95 actually is used to measure activation level (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3729211/#:~:text=The%20loss%20of%20CD21%20is,and%20its%20associated%20immune%20activation.)\
+	- Results\
+		- 3 days after sepsis start, decreased B cell total count\
+		- From day 1 to day 6 after sepsis start, decreased HLA-DR expression on B cells\
+			- HLA-DR is the MHC II that B cells use to present antigen to T-cells for T-cell help\
+		- 1 day after sepsis start, decreased B-cell activation measured via decreased CD69 expression\
+		- Decreased % of proliferating B cells \
+		- 3 days after sepsis start, increased IL-10 secretion by B cells\
+\
+\
+Seems that sepsis somehow causes down regulation of CD21 in naive and memory B cells, which is normally used to lower activation threshold for these cells\
+	- Result is that naive and memory B cells don\'92t react to subsequent antigen challenge as strongly b/c they are in an \'93exhausted-type\'94 phenotype (actually, is this just cd21- in memory, not naive, b cells?? double check this)\
+	- Also we see lots of IL-10 production\
+	- And TNF-alpha induced apoptosis\
+\
+\
+B-cell Depletion\
+- Sepsis-Induced Apoptosis Causes Progressive Profound Depletion of B and CD4 \up13 + \up0 T Lymphocytes in Humans \
+	- Persisetnely low lymphocyte count throughout sepsis\
+	- Loss of lymphoid follicle tissue\
+	- Critically ill and septic patients had higher levels of B cells with active caspase-9 (involved in cell apoptosis)\
+	- Discussion\
+		- Lymphocyte apoptosis in sepsis may be the cause of B cell depletion\
+			- Pathway as described in this paper\
+				- TNF activates caspase cascade, which causes apoptosis\
+\
+\
+\
+	\
+	- \
+\cf0 \kerning1\expnd0\expndtw0 \
+- \
+\
 \
 \
 Questions\
@@ -240,21 +307,23 @@ Questions\
 -\
 \
 - How to calibrate? Right now, for ex, with just cytokines and no scaling, ti and gc reaction produces way too many mem b cells compared to plasma cells, so i added a scaling to make pc fate more likely. is this ok, or do i need to play around with cytokines more?\
+	- try to match the graphs\
+\
 - How to handle memory b cells for 2nd exposure response? for ex, should they leave the follicle and just come right back into the ln? they need to be in the ln follicle to respond to 2nd exposure.\
 	- Also, should we incorporate some type of epitope specificity in BCRs? that will highlight the increased response to a 2nd exposure. \
+	- likely more wanting to have 1st exposure results\
+- Do we want to model speed/efficacy of neutralization of antigen? Or are we just interested in measuring the b-cell response itself\
+	- NOT necessarily worried about antibodies\
 \
+\
+Next, calibrate shape of curves and timescales\
 \
 Updates\
-- Will get innate immune response\
-- B cells acting as antigen presenting cells\
-	- Check this, see if b cells act as APCs with the free floating antigen\
-- for fuzzy things, get a list to get\
 - abstract deadline on august 19th, so we want enough of project done\
-	- want to get enough done by august\
-- check if b cells are in the blood as well\
 - scihub for free pirated aces\
-- add circulating component, maybe just track what comes out the lymph\
-	- don\'92t need to physically represent, just track data so we can graph\
+- UPDATES TO STATE DIAGRAM\
+	- Proliferation of activated b cells in t-independent reaction\
+		- IL4, il10, il15, il21\
 \
 \
 Include surface receptor (primary, simplest set of surface markers for each breed)\
