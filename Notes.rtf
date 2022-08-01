@@ -1,5 +1,5 @@
 {\rtf1\ansi\ansicpg1252\cocoartf2580
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fswiss\fcharset0 Helvetica-Bold;}
 {\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red35\green35\blue35;\red30\green30\blue30;
 \red245\green245\blue245;}
 {\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\cssrgb\c18039\c18039\c18039;\cssrgb\c15686\c15686\c15686;
@@ -165,6 +165,10 @@ LLPC\
 	- unregulated so that the cell leaves the lymph node and enters blood stream, eventually going to the BONE MARROW\
 \
 \
+Memory B cells\
+- Function\
+	- When activated, turn into plasma-secreting cells\
+\
 \
 B-cell signals from B cell overview (nature)\
 - B-T interactions (respectively\
@@ -236,9 +240,9 @@ Timeline\
 - half life of naive b cells is 13-22 weeks (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4637268/#:~:text=Given%20that%20the%20accepted%20half,lifespans%20than%20their%20na%C3%AFve%20counterparts.)\
 	- they move 6 micrometers per minute, every tick they move 2 (36 micrometers) patches\
 	- normal lymph node follicle diameter is 2 mm ( \cf3 \expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec3 IMMUNE-LYMPHATIC SYSTEM Abraham L.\'a0Kierszenbaum\'a0M.D., Ph.D., in\'a0Histology and Cell Biology: An Introduction to Pathology, 2020)\
+IMMUNE-LYMPHATIC SYSTEM Abraham L.\'a0Kierszenbaum\'a0M.D., Ph.D., in\'a0Histology and Cell Biology: An Introduction to Pathology, 2020)\
 		- world is 100 patches wide, so each patch is 20 micrometers\
-		\cf0 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 \
+		\cf0 \kerning1\expnd0\expndtw0 \
 - Ag specific memory b cell half life is around 100-500 days (same source as naive b cell half life source)\
 	- 300 day half life is 432 day lifespan\
 - SLPC lifespan is 3-5 days, or 240 ticks (https://www.frontiersin.org/articles/10.3389/fimmu.2019.00721/full#:~:text=Plasma%20cells%20can%20be%20generally,of%20several%20months%20to%20lifetime).)\
@@ -254,7 +258,7 @@ How to represent sepsis?\
 \
 B-Cell Exhaustion\
 - Main Frontiers Paper (\cf4 \cb5 \expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec4 Polymicrobial Sepsis Chronic Immunoparalysis Is Defined by Diminished Ag-Specific T Cell-Dependent B Cell Responses\cf0 \cb1 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 )\
+Polymicrobial Sepsis Chronic Immunoparalysis Is Defined by Diminished Ag-Specific T Cell-Dependent B Cell Responses\cf0 \cb1 \kerning1\expnd0\expndtw0 )\
 	- Decreased total number B cell count after sepsis\
 	- Decreased Ag-specific B cell count from vaccination after sepsis induction\
 	- Decreased Tfh cells after sepsis and vaccination\
@@ -294,36 +298,41 @@ B-cell Depletion\
 \
 	\
 	- \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf0 \kerning1\expnd0\expndtw0 \
 - \
 \
 \
 \
 Questions\
-- FIX THE TURNING WHEN TWO TURNS ARE IN SAME DIRECTION (THEY ADD RN, which is bad)\
 - DONT yet have IL6 stimulating antibody secretion rate of llpcs and slpcs\
-- For some reason, during one run of TI response, we saw LLPC. why???\
 - Need to fix interacting b-t cells after one of them dies during gc reaction\
 -\
 \
-- How to calibrate? Right now, for ex, with just cytokines and no scaling, ti and gc reaction produces way too many mem b cells compared to plasma cells, so i added a scaling to make pc fate more likely. is this ok, or do i need to play around with cytokines more?\
-	- try to match the graphs\
-\
-- How to handle memory b cells for 2nd exposure response? for ex, should they leave the follicle and just come right back into the ln? they need to be in the ln follicle to respond to 2nd exposure.\
-	- Also, should we incorporate some type of epitope specificity in BCRs? that will highlight the increased response to a 2nd exposure. \
-	- likely more wanting to have 1st exposure results\
-- Do we want to model speed/efficacy of neutralization of antigen? Or are we just interested in measuring the b-cell response itself\
-	- NOT necessarily worried about antibodies\
 \
 \
-Next, calibrate shape of curves and timescales\
+-
+\f1\b  How to handle cytokine influence?\
+	- Ex cd21. Should we have CD21 decrease every tick by amount of IL6/10? Or just set cd21 to 100-IL6/10? In the former, a longer lifespan of a cell would promote decreased expression. Not sure if we want this or not.\
+- How to represent sepsis?\
+	- In these papers, it seems like they are \'93stimulating\'94 the system with antigen challenge again after sepsis induction, so it doesn\'92t make sense to have sepsis based off of the number of antigen i insert into the LN. rather, should sepsis be its own standalone button that simply adds TNF-a and IL6 to the system?
+\f0\b0 \
 \
 Updates\
-- abstract deadline on august 19th, so we want enough of project done\
-- scihub for free pirated aces\
+- Bacteria now recirculating through LN. eveyrtime they recirulate, they have a random chance of being captured by FDC (if this is case, that bacteria will die)\
+- Mem B function implemented as just memory b cell -> SLPC upon activation. dubious evidence that they can undergo GC response.\
 - UPDATES TO STATE DIAGRAM\
 	- Proliferation of activated b cells in t-independent reaction\
 		- IL4, il10, il15, il21\
+\
+\
+\
+NOTES FROM LAST MEETING\
+- make cd21 expression on memory b cells decrease with IL6 and IL10\
+- make global variables for time units hours and days (units we\'92re familiar with) so we can have them monitored\
+- look into movie making in net logo\
+- create initial populations using random distribution of age\
+- look into choosers to pick the things i want hidden. use choosers to visualize specific cytokines and their distribution to make sure distribution looks normal\
 \
 \
 Include surface receptor (primary, simplest set of surface markers for each breed)\

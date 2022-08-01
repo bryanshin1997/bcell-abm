@@ -16,6 +16,7 @@ breed [th2-cells th2-cell]
 
 turtles-own [ in-blood bcr isotype csr-bool time-alive s1pr1-level s1pr2-level cxcr5-level ccr7-level ebi2r-level pro-breg level-of-activation tnf-a-stimulation]
 activated-b-cells-own [ response-type ]
+mem-b-cells-own [time-in-blood cd21-level]
 antibodies-own [antibody-type]
 bacteria-own [ epitope-type num-TI-ag num-TD-ag ]
 fdcs-own [presented-antigen time-presenting presented-antigen-type ]
@@ -55,6 +56,7 @@ to setup
 
   create-tfh-cells 20
   ask tfh-cells [ move-to one-of patches with [patch-type = 1] set time-alive -1000 set shape "square" set color cyan  set cxcr5-level 10 set ccr7-level 6 set ebi2r-level 6 set bcell-binding-status false]
+
 
   ;; Initialize global variables and counters
   set counter 0
@@ -103,6 +105,8 @@ to go
 
   insert-cytokines
 
+  incoming-sepsis
+
 
   ifelse counter > 100
   [set counter 0][set counter counter + 1]
@@ -110,11 +114,19 @@ to go
   tick
 end
 
+to incoming-sepsis
+  ask patches [set tnf-a tnf-a + ((count bacteria) / 1000)]
+  ask patches [set il6 il6 + ((count bacteria) / 1000)]
+end
 
+;to end-sepsis
+;  set incoming-tnf-a 0
+;  set incoming-il6 0
+;end
 
 to spawn-b-cell
 
-  if counter mod 7 = 0 and num-naive-b-cells-in-blood != 0[
+  if counter mod 10 = 0 and num-naive-b-cells-in-blood != 0[
     create-naive-b-cells 1 [ set shape "circle" set color white set size 1 setxy 49 0
       set time-alive 0
       set bcr random 30
@@ -200,9 +212,13 @@ to naive-b-cell-function
           set response-type 1
         ][
           set response-type 2   ; 2 is TD
+          set ccr7-level 12
+          set ebi2r-level 12
         ]
 
         ask antigen [ die ]
+
+
       ][
         if apc != nobody [
           set response-type [presented-antigen-type] of apc
@@ -215,7 +231,7 @@ to naive-b-cell-function
     chemotaxis
     move
 
-    if time-alive > 500 [
+    if time-alive > 300 [
       set s1pr1-level s1pr1-level + 0.5 ;; this slowly increases the # of s1p receptors (s1pr) in the naive b cell when the b-cell is old enough
     ]
   ]
@@ -230,7 +246,7 @@ to naive-b-cell-function
 end
 
 to check-breg-status
-  ifelse pro-breg > 400 [
+  ifelse pro-breg > 300 [
     set breed breg-cells
     set size 1
     set shape "circle"
@@ -247,7 +263,7 @@ end
 
 to check-tnf-status
   set tnf-a-stimulation tnf-a-stimulation + tnf-a
-  if tnf-a-stimulation > 60 [
+  if tnf-a-stimulation > 300 [
     ;print "apoptose"
     die
   ]
@@ -279,7 +295,11 @@ to activated-b-cell-function
     ifelse response-type = 2 [
       td-response
     ][
-      ti-response
+      ifelse response-type = 1 [
+        ti-response
+      ][
+        activated-mem-response
+      ]
     ]
 
     check-breg-status
@@ -368,24 +388,31 @@ to td-response
     ]
   ]
   ;; Activated B-cell for gc response upregulates CCR7 and EBI2R levels (capped out here at 12 for reasonably realistic localization behavior)
-  if ccr7-level < 12 [ set ccr7-level ccr7-level + 0.5 ]
-  if ebi2r-level < 12 [ set ebi2r-level ebi2r-level + 0.5 ]
+;  if ccr7-level < 12 [ set ccr7-level ccr7-level + 0.5 ]
+;  if ebi2r-level < 12 [ set ebi2r-level ebi2r-level + 0.5 ]
 end
 
 to ti-response
   set tnf-a tnf-a + 1
   if counter mod 50 = 0 [
-    let proPC (il21 + il10 + if-a + if-g )
+    let proPC (il21 + il10 + if-a + if-g ) * 3
       let proMem (il21 + il4); * 100
     ;let rPC random proPC
     ;let rMem random proMem
-    if time-alive mod 1 = 0 [
-      ifelse proPC > proMem [
-        hatch-sl-plasma-cells 1 [ set time-alive 0 set color lime + 3 set shape "circle" set size 1 set s1pr1-level 0 set pro-breg 0]
-      ][
-        hatch-mem-b-cells 1 [set time-alive 0 set color white set shape "target" set s1pr1-level 40 set pro-breg 0]
-      ]
+
+    ifelse proPC > proMem [
+      hatch-sl-plasma-cells 1 [ set time-alive 0 set color lime + 3 set shape "circle" set size 1 set s1pr1-level 0 set pro-breg 0]
+    ][
+      hatch-mem-b-cells 1 [set time-alive 0 set color white set shape "target" set s1pr1-level 40 set pro-breg 0 set cd21-level 100]
     ]
+
+  ]
+end
+
+to activated-mem-response
+  set tnf-a tnf-a + 1
+  if counter mod 100 = 0 [
+    hatch-sl-plasma-cells 1 [ set time-alive 0 set color lime + 3 set shape "circle" set size 1 set s1pr1-level 0 set pro-breg 0]
   ]
 end
 
@@ -413,11 +440,11 @@ to gc-b-cell-function
 ;     let rMem random proMem
 
       set level-of-activation il2 + il4 + il10 + il15 + il21 - if-g - if-a
-      if round (time-alive mod (30 / level-of-activation)) = 0 [
+      if round (time-alive mod (200 / level-of-activation)) = 0 [
         ifelse proPC > proMem [
           hatch-ll-plasma-cells 1 [ set time-alive 0 set color lime set shape "circle" set size 1 set s1pr1-level 40 set pro-breg 0]
         ][
-          hatch-mem-b-cells 1 [ set time-alive 0 set color white set shape "target" set s1pr1-level 40 set pro-breg 0]
+          hatch-mem-b-cells 1 [ set time-alive 0 set color white set shape "target" set s1pr1-level 40 set pro-breg 0 set cd21-level 100]
         ]
       ]
     ]
@@ -426,7 +453,7 @@ to gc-b-cell-function
   check-tnf-status
 
   set time-alive time-alive + 1
-  if time-alive > 400 [
+  if time-alive > 800 [
     ask link-neighbors [ set bcell-binding-status false ]
     die
   ]
@@ -493,20 +520,58 @@ to ll-plasma-cell-function
 end
 
 to mem-b-cell-function
-  if in-blood = false [
+  set cd21-level cd21-level - il6 - il10
+  ifelse in-blood = false [
      if patch-type = 2 [
       ;set num-llpcs-in-blood num-llpcs-in-blood + 1
       set in-blood true
       hide-turtle
+      set time-in-blood 0
+    ]
+
+    let apc one-of fdcs-here
+    let antigen one-of bacteria-here
+    if (apc != nobody and [presented-antigen] of apc != 0) or antigen != nobody[
+      set breed activated-b-cells
+      set pro-breg 0
+      set shape "circle"
+      set size 1
+      set color yellow
+      set csr-bool false
+      set time-alive 0
+      set s1pr1-level 0
+      ifelse antigen != nobody [
+        set response-type 3  ;; 3 response type is memb reponse upon activation
+        ask antigen [ die ]
+
+      ][
+        if apc != nobody [
+          set response-type 3
+        ]
+      ]
     ]
 
     check-breg-status
 
     chemotaxis
     move
+  ][
+    set time-in-blood time-in-blood + 1
+    if time-in-blood > 300 [
+      if hidden? [
+        set pro-breg 0
+        set hidden? false
+        set in-blood false
+        setxy 49 0
+        set s1pr1-level 10
+        set cxcr5-level 10
+      ]
+    ]
   ]
 
   check-tnf-status
+
+
 
   set time-alive time-alive + 1
   if time-alive > 15000 [
@@ -620,20 +685,35 @@ to th2-cell-function
 end
 
 to bacteria-function
-  if in-blood = false [
-    if patch-type = 2 [ ;; naive b cell exits LN
-                                        ;set num-naive-b-cells-in-blood num-naive-b-cells-in-blood + 1
-                                        ;die
-      set in-blood true
-      hide-turtle
+  if patch-type = 2 [ ;; for bacteria, im having them recirculate through blood. when recirculating, they can either just go back into LN, or can be captured by FDC. random cahnce of either
+    let x random 2
+
+    ifelse x = 0 [
+      setxy 49 0
+    ][
+      if any? fdcs with [presented-antigen = 0] [
+        ask one-of fdcs with [presented-antigen = 0] [
+          set time-presenting 0
+          set presented-antigen bacteria-epitope-type
+          set color red
+          let rTI random number-of-TI-epitopes
+          let rTD random number-of-TD-epitopes
+          ifelse rTI > rTD [
+            set presented-antigen-type 1   ;; 1 is TI
+          ][
+            set presented-antigen-type 2    ;; 2 is TD
+          ]
+        ]
+      ]
     ]
-    chemotaxis
-    move
   ]
+  chemotaxis
+  move
+
 
   set time-alive time-alive + 1
-  if time-alive > 500
-    [die]
+  ;if time-alive > 500
+    ;[die]
 
 end
 
@@ -676,7 +756,17 @@ to update-chemokine-gradient
 
     if patch-type = 0 [
       let total-cytokine-level il2 + il4 + il6 + il10 + il12 + il15 + il21 + tnf-a + tgf-b + if-a + if-g
-      ;set pcolor scale-color green total-cytokine-level 0.1 3  ;;used to visualize cxcl13 or ccl19 gradient
+      if cytokine != "none" [
+        if cytokine = "tnf-a" [
+          set pcolor scale-color green tnf-a 0.1 3  ;;used to visualize cxcl13 or ccl19 gradient
+        ]
+        if cytokine = "il6" [
+          set pcolor scale-color green il6 0.1 3  ;;used to visualize cxcl13 or ccl19 gradient
+        ]
+        if cytokine = "il10" [
+          set pcolor scale-color green il10 0.1 3  ;;used to visualize cxcl13 or ccl19 gradient
+        ]
+      ]
     ]
 
 
@@ -689,13 +779,14 @@ end
 ;This function is called when the user clicks the "inoculate" button in the interface. It adds bacteria into the system
 to inoculate
 
-  ask patches [ set tnf-a tnf-a + (number-of-bacteria / 10) ]
-  ask patches [ set il6 il6 + (number-of-bacteria / 4) ]
+  ;ask patches [ set tnf-a tnf-a + (number-of-bacteria / 10) ]
+  ;set incoming-tnf-a (number-of-bacteria / 1000)
+  ;set incoming-il6 (number-of-bacteria / 1000)
+  ;ask patches [ set il6 il6 + (number-of-bacteria / 4) ]
 
-  let free-floating-bacteria-number random ( number-of-bacteria )
-  let fdc-captured-bacteria-number number-of-bacteria - free-floating-bacteria-number
 
-  ask n-of fdc-captured-bacteria-number fdcs [
+
+  ask up-to-n-of (number-of-bacteria / 2) fdcs [
     set time-presenting 0
     set presented-antigen bacteria-epitope-type
    ;set color 15 + (presented-antigen - 1) * 30
@@ -710,13 +801,13 @@ to inoculate
     ]
   ]
 
-  create-bacteria free-floating-bacteria-number [                            ;; Creates bacteria. "number-of-bacteria" is a variable controlled by an interface slider
+  create-bacteria (number-of-bacteria / 2) [                            ;; Creates bacteria. "number-of-bacteria" is a variable controlled by an interface slider
     ;set color 15 + (bacteria-epitope-type - 1) * 30               ;; Sets the color of the bacteria based on epitope type. Uses netlogo's 0-139 color scale (integer values)
     set color red
     set shape "bug"
     set size 2
     setxy 49 0
-    set s1pr1-level 10
+    set s1pr1-level 8
     set time-alive 0
     set in-blood false
     set epitope-type bacteria-epitope-type                        ;; Sets the bacteria's epitope-type. "bacteria-epitope-type" is a value is from an interface slider
@@ -894,10 +985,10 @@ NIL
 1
 
 BUTTON
-549
-65
-635
-98
+548
+23
+634
+56
 Add Antigen
 inoculate
 NIL
@@ -918,8 +1009,8 @@ SLIDER
 number-of-bacteria
 number-of-bacteria
 0
-50
-50.0
+500
+52.0
 1
 1
 NIL
@@ -934,7 +1025,7 @@ bacteria-epitope-type
 bacteria-epitope-type
 1
 30
-26.0
+30.0
 1
 1
 NIL
@@ -988,8 +1079,8 @@ true
 PENS
 "LLPCs" 1.0 0 -14439633 true "" "plot count ll-plasma-cells with [in-blood = true]"
 "SLPCs" 1.0 0 -8330359 true "" "plot count sl-plasma-cells"
-"Mem B-Cells" 1.0 0 -7500403 true "" "plot count mem-b-cells with [in-blood = true]"
-"Total B Lymphocytes" 1.0 0 -2674135 true "" "plot (count mem-b-cells with [in-blood = true]) + (count ll-plasma-cells with [in-blood = true]) + (count sl-plasma-cells )"
+"Mem B-Cells" 1.0 0 -7500403 true "" "plot count mem-b-cells"
+"Total B Lymphocytes" 1.0 0 -2674135 true "" "plot (count mem-b-cells) + (count ll-plasma-cells with [in-blood = true]) + (count sl-plasma-cells )"
 
 PLOT
 24
@@ -1026,6 +1117,34 @@ false
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" "plot sum ([il10] of patches)"
+
+CHOOSER
+437
+466
+575
+511
+cytokine
+cytokine
+"none" "tnf-a" "il6" "il10"
+1
+
+PLOT
+22
+110
+222
+260
+plot 1
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot count bacteria"
 
 @#$#@#$#@
 ## Description of the model
