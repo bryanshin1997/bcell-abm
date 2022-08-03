@@ -247,7 +247,8 @@ IMMUNE-LYMPHATIC SYSTEM Abraham L.\'a0Kierszenbaum\'a0M.D., Ph.D., in\'a0Histolo
 	- 300 day half life is 432 day lifespan\
 - SLPC lifespan is 3-5 days, or 240 ticks (https://www.frontiersin.org/articles/10.3389/fimmu.2019.00721/full#:~:text=Plasma%20cells%20can%20be%20generally,of%20several%20months%20to%20lifetime).)\
 - LLPC lifespan is several months to years (6 months is around 8000 ticks) (https://www.frontiersin.org/articles/10.3389/fimmu.2019.00721/full#:~:text=Plasma%20cells%20can%20be%20generally,of%20several%20months%20to%20lifetime).)\
-- Formation of GC takes 7-14 days (https://www.mdpi.com/2073-4409/10/7/1736/htm)\
+- Formation of GC takes 7-14 days, (https://www.mdpi.com/2073-4409/10/7/1736/htm)\
+	- they persist for another 1 - 2 weeks (https://pubmed.ncbi.nlm.nih.gov/8011279/)\
 - Ab half-life is 26 days (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3291529/)\
 \
 \
@@ -338,6 +339,13 @@ NOTES FROM LAST MEETING\
 Include surface receptor (primary, simplest set of surface markers for each breed)\
 we are only interested in IgM and IgG\
 check if FDCs secrete any of those cytokines\
+\
+\
+in order to implement the cd21-mediated memory b-cell exhaustion, i\'92ve first been implementing normal memory b cell function (during first exposure, memory b cells are generated so that there can be a more robust response upon second exposure). however, i\'92m running into some issues that i wanted to ask you about!\
+\
+right now, as soon as my memory b cells are made/spawned during the first antigen exposure, they sometimes come into contact with an antigen/FDC almost immediately just because their spawn location is located really close to antigen/FDCs. when that happens, the first exposure response is really big because the memory b cells are immediately amplifying the response. as a result, \
+\
+\
 \
 Sources:\
 - https://www.jimmunol.org/content/198/10/3846\

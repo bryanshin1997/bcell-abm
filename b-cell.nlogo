@@ -1,3 +1,4 @@
+extensions [ vid ]
 breed [bacteria bacterium]               ;; Defines the bacteria breed
 breed [antibodies antibody]              ;; Defines the antibody breed
 breed [fdcs fdc]                         ;; Defines the FDC breed
@@ -14,9 +15,10 @@ breed [th1-cells th1-cell]
 breed [th2-cells th2-cell]
 
 
-turtles-own [ in-blood bcr isotype csr-bool time-alive s1pr1-level s1pr2-level cxcr5-level ccr7-level ebi2r-level pro-breg level-of-activation tnf-a-stimulation]
+turtles-own [ in-blood bcr isotype csr-bool time-alive cd21-level s1pr1-level s1pr2-level cxcr5-level ccr7-level ebi2r-level pro-breg level-of-activation tnf-a-stimulation]
 activated-b-cells-own [ response-type ]
-mem-b-cells-own [time-in-blood cd21-level]
+;naive-b-cells-own [cd21-level]
+mem-b-cells-own [time-in-blood]
 antibodies-own [antibody-type]
 bacteria-own [ epitope-type num-TI-ag num-TD-ag ]
 fdcs-own [presented-antigen time-presenting presented-antigen-type ]
@@ -35,6 +37,8 @@ globals [                          ;; Both globals below are used to measure the
   num-llpcs-in-blood
   is-gc-seeded
 
+  days-passed
+
   counter
 ]
 
@@ -42,6 +46,13 @@ globals [                          ;; Both globals below are used to measure the
 ;Called when the "setup" button is clicked. Should be the first action by the user.
 to setup
   clear-all
+
+  set days-passed 0
+
+  if recording [
+    carefully [ vid:start-recorder ] [ user-message error-message ]
+  ]
+
 
   ;; Sets up the world structure (lymph node follicle + surrounding paracortex)
   ask patch 0 0 [ask patches in-radius 200  [set patch-type 1 set pcolor gray ]] ; outer zone
@@ -73,6 +84,14 @@ end
 
 ;Called every tick
 to go
+
+  if recording [
+    vid:record-interface
+
+  ]
+
+  set days-passed counter / 48
+
   spawn-b-cell
   spawn-th0-cell
 
@@ -108,15 +127,17 @@ to go
   incoming-sepsis
 
 
-  ifelse counter > 100
-  [set counter 0][set counter counter + 1]
+;  ifelse counter > 100
+;  [set counter 0][set counter counter + 1]
+  set counter counter + 1
 
   tick
 end
 
 to incoming-sepsis
   ask patches [set tnf-a tnf-a + ((count bacteria) / 1000)]
-  ask patches [set il6 il6 + ((count bacteria) / 1000)]
+  ask patches [set il6 il6 + ((count bacteria) / 450)]
+
 end
 
 ;to end-sepsis
@@ -136,6 +157,8 @@ to spawn-b-cell
       set cxcr5-level 16
       set ccr7-level 0
       set ebi2r-level 0
+      set cd21-level 100
+
       ;set num-naive-b-cells-in-blood num-naive-b-cells-in-blood - 1
       set in-blood false
     ]
@@ -187,12 +210,17 @@ end
 
 to naive-b-cell-function
 
+  set cd21-level 20 - ((il6 - il10) * 10)
+
   if in-blood = false [
     if patch-type = 2 [ ;; naive b cell exits LN
       set in-blood true
-      hide-turtle
+      ;hide-turtle
+      die
     ]
 
+
+if cd21-level > 10[
     ;; First, checks if naive b-cell is in contact with an APC presenting an antigen
     ;; Selects a single bacteria/antigen at the naive-b-cells current location
     let apc one-of fdcs-here
@@ -225,7 +253,7 @@ to naive-b-cell-function
         ]
       ]
     ]
-
+    ]
     check-breg-status
 
     chemotaxis
@@ -246,7 +274,7 @@ to naive-b-cell-function
 end
 
 to check-breg-status
-  ifelse pro-breg > 300 [
+  ifelse pro-breg > 250 [
     set breed breg-cells
     set size 1
     set shape "circle"
@@ -262,10 +290,14 @@ to check-breg-status
 end
 
 to check-tnf-status
-  set tnf-a-stimulation tnf-a-stimulation + tnf-a
-  if tnf-a-stimulation > 300 [
+  set tnf-a-stimulation 100 * tnf-a
+
+  if tnf-a-stimulation > 60 [
     ;print "apoptose"
-    die
+    let x random 900
+    if x = 0 [
+      die
+    ]
   ]
 end
 
@@ -393,9 +425,10 @@ to td-response
 end
 
 to ti-response
+  set time-alive time-alive
   set tnf-a tnf-a + 1
-  if counter mod 50 = 0 [
-    let proPC (il21 + il10 + if-a + if-g ) * 3
+  if counter mod 20 = 0 [
+    let proPC (il21 + il10 + if-a + if-g )
       let proMem (il21 + il4); * 100
     ;let rPC random proPC
     ;let rMem random proMem
@@ -403,7 +436,7 @@ to ti-response
     ifelse proPC > proMem [
       hatch-sl-plasma-cells 1 [ set time-alive 0 set color lime + 3 set shape "circle" set size 1 set s1pr1-level 0 set pro-breg 0]
     ][
-      hatch-mem-b-cells 1 [set time-alive 0 set color white set shape "target" set s1pr1-level 40 set pro-breg 0 set cd21-level 100]
+      hatch-mem-b-cells 1 [set time-alive 0 set color white set shape "target" set s1pr1-level 10 set pro-breg 0 set cd21-level 100 set cxcr5-level 0]
     ]
 
   ]
@@ -430,21 +463,22 @@ to gc-b-cell-function
     set ebi2r-level 0
     set ccr7-level 0
 
-    ifelse distance patch 0 0 > 10 [
+    ifelse distance patch 0 0 > 15 [
       chemotaxis
       gc-move
     ][
       let proPC (il21 + il10 + if-a + if-g )
-      let proMem (il21 + il4) ;* 100
+      let proMem (il21 + il4) * 2;* 100
 ;     let rPC random proPC
 ;     let rMem random proMem
 
       set level-of-activation il2 + il4 + il10 + il15 + il21 - if-g - if-a
-      if round (time-alive mod (200 / level-of-activation)) = 0 [
+      ;if round (time-alive mod (20 / level-of-activation)) = 0 [
+      if time-alive mod 20 = 0 [
         ifelse proPC > proMem [
           hatch-ll-plasma-cells 1 [ set time-alive 0 set color lime set shape "circle" set size 1 set s1pr1-level 40 set pro-breg 0]
         ][
-          hatch-mem-b-cells 1 [ set time-alive 0 set color white set shape "target" set s1pr1-level 40 set pro-breg 0 set cd21-level 100]
+          hatch-mem-b-cells 1 [ set time-alive 0 set color white set shape "target" set s1pr1-level 10 set cxcr5-level 0 set pro-breg 0 set cd21-level 100]
         ]
       ]
     ]
@@ -453,7 +487,7 @@ to gc-b-cell-function
   check-tnf-status
 
   set time-alive time-alive + 1
-  if time-alive > 800 [
+  if time-alive > 1000 [
     ask link-neighbors [ set bcell-binding-status false ]
     die
   ]
@@ -520,7 +554,7 @@ to ll-plasma-cell-function
 end
 
 to mem-b-cell-function
-  set cd21-level cd21-level - il6 - il10
+  set cd21-level 20 - ((il6 - il10) * 10)
   ifelse in-blood = false [
      if patch-type = 2 [
       ;set num-llpcs-in-blood num-llpcs-in-blood + 1
@@ -529,6 +563,29 @@ to mem-b-cell-function
       set time-in-blood 0
     ]
 
+;    let apc one-of fdcs-here
+;    let antigen one-of bacteria-here
+;    if (apc != nobody and [presented-antigen] of apc != 0) or antigen != nobody[
+;      set breed activated-b-cells
+;      set pro-breg 0
+;      set shape "circle"
+;      set size 1
+;      set color yellow
+;      set csr-bool false
+;      set time-alive 0
+;      set s1pr1-level 0
+;      ifelse antigen != nobody [
+;        set response-type 3  ;; 3 response type is memb reponse upon activation
+;        ask antigen [ die ]
+;
+;      ][
+;        if apc != nobody [
+;          set response-type 3
+;        ]
+;      ]
+;    ]
+
+    if cd21-level > 10[
     let apc one-of fdcs-here
     let antigen one-of bacteria-here
     if (apc != nobody and [presented-antigen] of apc != 0) or antigen != nobody[
@@ -538,17 +595,27 @@ to mem-b-cell-function
       set size 1
       set color yellow
       set csr-bool false
-      set time-alive 0
-      set s1pr1-level 0
+      set time-alive 100
       ifelse antigen != nobody [
-        set response-type 3  ;; 3 response type is memb reponse upon activation
+        let rTI random [num-TI-ag] of antigen
+        let rTD random [num-TD-ag] of antigen
+        ifelse rTI > rTD [
+          set response-type 1
+        ][
+          set response-type 2   ; 2 is TD
+          set ccr7-level 12
+          set ebi2r-level 12
+        ]
+
         ask antigen [ die ]
+
 
       ][
         if apc != nobody [
-          set response-type 3
+          set response-type [presented-antigen-type] of apc
         ]
       ]
+    ]
     ]
 
     check-breg-status
@@ -905,6 +972,27 @@ to gc-move
   fd 0.5
 end
 
+
+to make-movie
+  if vid:recorder-status = "inactive" [
+    user-message "The recorder is inactive. There is nothing to save."
+    stop
+  ]
+  ; prompt user for movie location
+  user-message (word
+    "Choose a name for your movie file (the "
+    ".mp4 extension will be automatically added).")
+  let path user-new-file
+  if not is-string? path [ stop ]  ; stop if user canceled
+  ; export the movie
+  carefully [
+    vid:save-recording path
+    user-message (word "Exported movie to " path ".")
+  ] [
+    user-message error-message
+  ]
+end
+
 to insert-cytokines
 ;  if mouse-down?     ;; reports true or false to indicate whether mouse button is down
 ;    [
@@ -953,8 +1041,8 @@ ticks
 BUTTON
 14
 16
-128
-79
+106
+54
 NIL
 setup
 NIL
@@ -968,10 +1056,10 @@ NIL
 1
 
 BUTTON
-133
+119
 16
-256
-78
+217
+55
 NIL
 go\n
 T
@@ -1083,10 +1171,10 @@ PENS
 "Total B Lymphocytes" 1.0 0 -2674135 true "" "plot (count mem-b-cells) + (count ll-plasma-cells with [in-blood = true]) + (count sl-plasma-cells )"
 
 PLOT
-24
-122
-224
-272
+17
+179
+192
+306
 Antibody Response Curve
 NIL
 Ab Level
@@ -1101,10 +1189,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot count antibodies"
 
 PLOT
-24
-296
-224
-446
+16
+316
+197
+440
 IL-10 Production
 NIL
 NIL
@@ -1119,32 +1207,53 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot sum ([il10] of patches)"
 
 CHOOSER
-437
-466
-575
-511
+684
+477
+822
+522
 cytokine
 cytokine
 "none" "tnf-a" "il6" "il10"
+0
+
+BUTTON
+125
+72
+248
+105
+NIL
+make-movie
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
 1
 
-PLOT
-22
-110
-222
-260
-plot 1
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot count bacteria"
+SWITCH
+15
+71
+117
+104
+recording
+recording
+1
+1
+-1000
+
+MONITOR
+25
+122
+188
+167
+Number of Days Elapsed
+days-passed
+1
+1
+11
 
 @#$#@#$#@
 ## Description of the model
