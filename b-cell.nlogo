@@ -1,4 +1,3 @@
-extensions [ vid ]
 breed [bacteria bacterium]               ;; Defines the bacteria breed
 breed [antibodies antibody]              ;; Defines the antibody breed
 breed [fdcs fdc]                         ;; Defines the FDC breed
@@ -14,13 +13,10 @@ breed [th0-cells th0-cell]
 breed [th1-cells th1-cell]
 breed [th2-cells th2-cell]
 
-
-turtles-own [ in-blood bcr isotype csr-bool time-alive cd21-level s1pr1-level s1pr2-level cxcr5-level ccr7-level ebi2r-level pro-breg level-of-activation tnf-a-stimulation]
+turtles-own [ in-blood bcr isotype csr-bool time-alive tnfa-threshold breg-threshold cd21-level s1pr1-level s1pr2-level cxcr5-level ccr7-level ebi2r-level pro-breg level-of-activation tnf-a-stimulation]
 activated-b-cells-own [ response-type ]
-;naive-b-cells-own [cd21-level]
-mem-b-cells-own [time-in-blood]
 antibodies-own [antibody-type]
-bacteria-own [ epitope-type num-TI-ag num-TD-ag ]
+bacteria-own [ epitope-type num-TI-ep num-TD-ep ]
 fdcs-own [presented-antigen time-presenting presented-antigen-type ]
 th0-cells-own [r1 r2 rf th1-activation th2-activation tfh-activation]
 tfh-cells-own [bcell-binding-status]
@@ -28,78 +24,55 @@ th1-cells-own [bcell-binding-status]
 th2-cells-own [bcell-binding-status]
 patches-own [ patch-type s1p-level cxcl13-level ccl19-level ebi2-level il2 il4 il6 il10 il12 il15 il21 if-g if-a tnf-a tgf-b]  ;; note ccl19 and ccl25 both are used for b-cell localization to b/t border
 
-globals [                          ;; Both globals below are used to measure the time it takes for an infection to clear
-
-  naive-b-cell-spawn-timer
-  llpc-lifespan-timer
-  num-bacteria-escaped-to-blood
-  num-naive-b-cells-in-blood
-  num-llpcs-in-blood
-  is-gc-seeded
-
-  days-passed
-
-  counter
+globals [
+  days-passed         ;; Keeps track of the # of days passed since model setup
+  average-cd21-expression
+  total-num-of-apoptosed-cells
 ]
 
 
-;Called when the "setup" button is clicked. Should be the first action by the user.
+; Called when the "setup" button is clicked. Should be the first action by the user.
 to setup
   clear-all
 
-  set days-passed 0
+  if RandomRuns? = false [random-seed RandomSeed]
 
-  if recording [
-    carefully [ vid:start-recorder ] [ user-message error-message ]
-  ]
+  ; Sets up the world structure (lymph node follicle + surrounding paracortex)
+  ask patch 0 0 [ask patches in-radius 200  [set patch-type 1 set pcolor gray ]]                            ; Paracortex (outer) zone
+  ask patch 0 0 [ask patches in-radius 49  [set patch-type 0 set pcolor black]]                             ; Follicle (inner) zone
+  ask patches with [ (pxcor = -50 or pxcor = -49) and abs(pycor) < 5 ] [ set patch-type 2 set pcolor red ]  ; Exit from follicle
 
+  ; Initializes the FDCs
+  create-fdcs 60
+  ask fdcs [ set shape "square" set color brown move-to one-of patches in-radius 20 with [any? fdcs-here = false]]   ; Ensures FDCs don't spawn ontop of eachother
 
-  ;; Sets up the world structure (lymph node follicle + surrounding paracortex)
-  ask patch 0 0 [ask patches in-radius 200  [set patch-type 1 set pcolor gray ]] ; outer zone
-  ;ask patch 50 0 [ set pcolor gray set patch-type 1 ]
-  ask patch 0 0 [ask patches in-radius 49  [set patch-type 0 set pcolor black]] ; inner zone
-  ask patches with [ (pxcor = -50 or pxcor = -49) and abs(pycor) < 5 ] [ set patch-type 2 set pcolor red ]
-
-  ask patches [ set s1p-level 0 set cxcl13-level 0 set ccl19-level 0 set ebi2-level 0 ]
-
-  create-fdcs 60             ;; creates arbitrary # of FDCs for now
-  ask fdcs [ set shape "square" set color brown setxy (-20 + random 40) (-20 + random 40) ] ;;non-possible antigen value during spawn to represent FDC with no antigen bound
-
+  ; Initializes the starting population of Tfh cells
   create-tfh-cells 20
   ask tfh-cells [ move-to one-of patches with [patch-type = 1] set time-alive -1000 set shape "square" set color cyan  set cxcr5-level 10 set ccr7-level 6 set ebi2r-level 6 set bcell-binding-status false]
 
-
   ;; Initialize global variables and counters
-  set counter 0
-
-  set num-naive-b-cells-in-blood 1000
-  set is-gc-seeded false
-
+  set days-passed 0
 
 
   reset-ticks
 end
 
 
-
-;Called every tick
+; Called every tick
 to go
-
-  if recording [
-    vid:record-interface
-
-  ]
-
-  set days-passed counter / 48
+  ; Calculates the # of days passed from the # of ticks passed
+  set days-passed ticks / 48    ;; 1 tick = 30 minutes, so 48 ticks = 1 day
 
   spawn-b-cell
   spawn-th0-cell
 
-
+  ; Cytokine release from paracortex
   ask patches with [ patch-type = 1 ] [
    set ccl19-level ccl19-level + 2
    set ebi2-level ebi2-level + 2
   ]
+
+  ; Cytokine release from follicle exit
   ask patches with [ patch-type = 2 ] [
    set s1p-level s1p-level + 2
   ]
@@ -111,43 +84,40 @@ to go
   ask ll-plasma-cells [ll-plasma-cell-function ]
   ask sl-plasma-cells [sl-plasma-cell-function ]
   ask mem-b-cells [mem-b-cell-function]
+  ask antibodies [antibodies-function]
+  ask breg-cells [ breg-function ]
   ask tfh-cells [ tfh-cell-function ]
   ask th0-cells [th0-cell-function ]
   ask th1-cells [th1-cell-function ]
   ask th2-cells [th2-cell-function ]
   ask bacteria [ bacteria-function ]
-  ask breg-cells [ breg-function ]
 
-  ask antibodies [antibodies-function]
-
+  calculate-incoming-tnfa-il6-level
   update-chemokine-gradient
 
-  insert-cytokines
+  check-overall-cd21-expression
 
-  incoming-sepsis
-
-
-;  ifelse counter > 100
-;  [set counter 0][set counter counter + 1]
-  set counter counter + 1
+  ; Automatically inoculates at specified ticks if autoinoculate? switch is ON
+  if autoinoculate? [
+    if ticks = 480 [    ; At 10 days
+      auto-inoculate first-exposure-amt    ; Variable from interface input
+    ]
+    if ticks = 2880 [   ; At 60 days
+      auto-inoculate second-exposure-amt   ; Variable from interface input
+    ]
+    if ticks = 4800 [   ; Stops the run at 100 days
+      ;setup
+      stop
+    ]
+  ]
 
   tick
 end
 
-to incoming-sepsis
-  ask patches [set tnf-a tnf-a + ((count bacteria) / 1000)]
-  ask patches [set il6 il6 + ((count bacteria) / 450)]
 
-end
-
-;to end-sepsis
-;  set incoming-tnf-a 0
-;  set incoming-il6 0
-;end
-
+; Spawns naive B-cells at a constant rate
 to spawn-b-cell
-
-  if counter mod 10 = 0 and num-naive-b-cells-in-blood != 0[
+  if ticks mod 10 = 0 [
     create-naive-b-cells 1 [ set shape "circle" set color white set size 1 setxy 49 0
       set time-alive 0
       set bcr random 30
@@ -157,17 +127,19 @@ to spawn-b-cell
       set cxcr5-level 16
       set ccr7-level 0
       set ebi2r-level 0
-      set cd21-level 100
-
-      ;set num-naive-b-cells-in-blood num-naive-b-cells-in-blood - 1
+      set cd21-level 0
       set in-blood false
+
+      set tnfa-threshold (bcell-tnfa-apop-threshold + random 50)
+      set breg-threshold (bcell-breg-diff-threshold + random 50)
     ]
   ]
 end
 
-to spawn-th0-cell
 
-  if counter mod 20 = 0 [
+; Spawns precursor TH0 cells at a constant rate
+to spawn-th0-cell
+  if ticks mod 20 = 0 [
     create-th0-cells 1 [ set shape "square" set color yellow
       move-to one-of patches with [patch-type = 1]
       set time-alive 0
@@ -176,7 +148,6 @@ to spawn-th0-cell
       set cxcr5-level 0
       set ccr7-level 6
       set ebi2r-level 6
-      ;set num-naive-b-cells-in-blood num-naive-b-cells-in-blood - 1
       set in-blood false
     ]
   ]
@@ -184,16 +155,18 @@ end
 
 
 to fdc-function
+  ; Secretes the cytokines below
   set cxcl13-level cxcl13-level + 2
   set il4 il4 + 1
   set il6 il6 + 2
   set il15 il15 + 2
   set il12 il12 + 2
 
-  if presented-antigen != 0 [
+  ; If FDC is presenting antigen, determines when it will stop presenting it
+  if presented-antigen != 0 [     ; presented-antigen = 0 represents no presented antigen
     set time-presenting time-presenting + 1
   ]
-  if time-presenting = 300 [
+  if time-presenting = 300 [      ; Stops presenting the antigen after 300 ticks / 6 days
     set presented-antigen 0
     set color brown
     set presented-antigen-type 0
@@ -201,32 +174,32 @@ to fdc-function
   ]
 end
 
+
 to antibodies-function
-   set time-alive time-alive + 1
-  if time-alive > 1200 [
+  set time-alive time-alive + 1
+  if time-alive > 900 [
     die
   ]
 end
 
+
 to naive-b-cell-function
+  set cd21-level 60 - ((il6 + il10) * 10)     ; Calculates CD21 exppression based off of il6 and il10 levels (scaled) in current patch
 
-  set cd21-level 20 - ((il6 - il10) * 10)
+  if patch-type = 2 [         ; Represents naive b cell exiting the follicle
+    die
+  ]
 
-  if in-blood = false [
-    if patch-type = 2 [ ;; naive b cell exits LN
-      set in-blood true
-      ;hide-turtle
-      die
-    ]
+  ;; Checks if naive b-cell is in contact with an antigen-bound APC or free-floating antigen
+  let apc one-of fdcs-here
+  let antigen one-of bacteria-here
+  if (apc != nobody and [presented-antigen] of apc != 0) or antigen != nobody[
 
-
-if cd21-level > 10[
-    ;; First, checks if naive b-cell is in contact with an APC presenting an antigen
-    ;; Selects a single bacteria/antigen at the naive-b-cells current location
-    let apc one-of fdcs-here
-    let antigen one-of bacteria-here
-    if (apc != nobody and [presented-antigen] of apc != 0) or antigen != nobody[
+    ; Only activates if the B-cell's cd21 level is above the cd21 threshold (bcell-cd21-activation-threshold is defined in the interface slider)
+    ifelse cd21-level > bcell-cd21-activation-threshold [
+      print word (word breed " activating with cd21-level at: ") cd21-level
       set breed activated-b-cells
+      set il6 il6 + phag-il6-burst
       set pro-breg 0
       set shape "circle"
       set size 1
@@ -234,78 +207,54 @@ if cd21-level > 10[
       set csr-bool false
       set time-alive 0
       ifelse antigen != nobody [
-        let rTI random [num-TI-ag] of antigen
-        let rTD random [num-TD-ag] of antigen
+        ; Randomly picks whether the B-cell binds to a TI epitope or a TD epitope
+        let rTI random [num-TI-ep] of antigen
+        let rTD random [num-TD-ep] of antigen
         ifelse rTI > rTD [
-          set response-type 1
+          set response-type 1   ; Response-type of 1 represents a TI response
         ][
-          set response-type 2   ; 2 is TD
+          set response-type 2   ; Response-type of 2 represents a TD response
+
+          ; If TD response, B-cell upregulates ccr7 and ebi2r to localize to paracortex
           set ccr7-level 12
           set ebi2r-level 12
         ]
-
         ask antigen [ die ]
-
-
       ][
         if apc != nobody [
           set response-type [presented-antigen-type] of apc
         ]
       ]
-    ]
-    ]
-    check-breg-status
-
-    chemotaxis
-    move
-
-    if time-alive > 300 [
-      set s1pr1-level s1pr1-level + 0.5 ;; this slowly increases the # of s1p receptors (s1pr) in the naive b cell when the b-cell is old enough
+    ] [
+      print  word (word breed "NOT activating with cd21-level at: " ) cd21-level
     ]
   ]
 
-  check-tnf-status
+  chemotaxis
+  move
+
+  check-breg-status   ; Checks level of stimulation of b-reg differentiation
+  check-tnf-status    ; Checks level of TNF-a stimulation for apoptosis
+
+  if time-alive > 300 [
+    set s1pr1-level s1pr1-level + 0.5 ;; this slowly increases the # of s1p receptors (s1pr) in the naive b cell when the b-cell is old enough
+  ]
 
   set time-alive time-alive + 1
   if time-alive > 1000 [
     die
   ]
-
 end
 
-to check-breg-status
-  ifelse pro-breg > 250 [
-    set breed breg-cells
-    set size 1
-    set shape "circle"
-    set color violet
-    set s1pr1-level 0
-    set time-alive 0
-  ][
-    set pro-breg pro-breg + il6 + il21
-  ]
 
-
-
-end
-
-to check-tnf-status
-  set tnf-a-stimulation 100 * tnf-a
-
-  if tnf-a-stimulation > 60 [
-    ;print "apoptose"
-    let x random 900
-    if x = 0 [
-      die
-    ]
-  ]
-end
 
 to breg-function
+  ; Secretes the below cytokines
   set il10 il10 + 5
   set tgf-b tgf-b + 1
-  chemotaxis
-  move
+
+  ;chemotaxis
+  breg-move
 
   check-tnf-status
 
@@ -315,14 +264,17 @@ to breg-function
   ]
 end
 
+
 to activated-b-cell-function
+
   if in-blood = false [
-    if patch-type = 2 [
+    ; Only performs the following commands if currently inside the follicle, and NOT in the blood/lymph
+    if patch-type = 2 [   ; If the cell reaches the follicle exit (patch-type 2)
       set in-blood true
       hide-turtle
     ]
 
-    isotype-switch
+    isotype-switch   ; Determines which isotype to switch to
 
     ifelse response-type = 2 [
       td-response
@@ -330,7 +282,7 @@ to activated-b-cell-function
       ifelse response-type = 1 [
         ti-response
       ][
-        activated-mem-response
+        ; activated-mem-response    ;THIS IS NOT CURRENTLY BEING USED, KEPT IN CASE WE WANT EFFECTOR MEM FUNCTION TO BE DIFFERENT FROM NORMAL B-CELLs
       ]
     ]
 
@@ -338,7 +290,6 @@ to activated-b-cell-function
 
     chemotaxis
     move
-
   ]
 
   check-tnf-status
@@ -349,15 +300,15 @@ to activated-b-cell-function
   ]
 end
 
-to isotype-switch
 
+; Determines which isotype an activated B-cell will switch to
+to isotype-switch
   if csr-bool = false [
       let igM-bucket 0
       let igD-bucket 0
       let igA-bucket 0
       let igG-bucket 0
       let igE-bucket 0
-
 
       set igM-bucket il12 + il15 + il6
       ;set igD-bucket   ;seems igD differentiation isnt stimulated by anything
@@ -394,7 +345,10 @@ to isotype-switch
     ]
 end
 
+
+; T-dependent B-cell response
 to td-response
+  ; The activated B-cell can get help from either a Tfh cell or a Th2 cell
   let tfh one-of tfh-cells-here
   let th2 one-of th2-cells-here
   ifelse tfh != nobody [
@@ -408,8 +362,7 @@ to td-response
     ask tfh [ set ebi2r-level 0 set ccr7-level 0 set bcell-binding-status true]
   ][
    if th2 != nobody [
-
-     set breed gc-b-cells
+      set breed gc-b-cells
       set pro-breg 0
       set color orange
       set shape "circle"
@@ -419,81 +372,75 @@ to td-response
       ask th2 [ set ebi2r-level 0 set ccr7-level 0 set bcell-binding-status true]
     ]
   ]
-  ;; Activated B-cell for gc response upregulates CCR7 and EBI2R levels (capped out here at 12 for reasonably realistic localization behavior)
-;  if ccr7-level < 12 [ set ccr7-level ccr7-level + 0.5 ]
-;  if ebi2r-level < 12 [ set ebi2r-level ebi2r-level + 0.5 ]
 end
 
 to ti-response
-  set time-alive time-alive
+  ; Activated B-cells undergoing TI response secrete TNF-a
   set tnf-a tnf-a + 1
-  if counter mod 20 = 0 [
-    let proPC (il21 + il10 + if-a + if-g )
-      let proMem (il21 + il4); * 100
-    ;let rPC random proPC
-    ;let rMem random proMem
+
+  if time-alive mod 50 = 0 [      ; This is used to represent the rate of proliferation
+    let proPC (il21 + il10 + if-a + if-g ) * 5    ; Scaled to create reasonable plasma cell populations
+    let proMem (il21 + il4); * 100
 
     ifelse proPC > proMem [
       hatch-sl-plasma-cells 1 [ set time-alive 0 set color lime + 3 set shape "circle" set size 1 set s1pr1-level 0 set pro-breg 0]
     ][
-      hatch-mem-b-cells 1 [set time-alive 0 set color white set shape "target" set s1pr1-level 10 set pro-breg 0 set cd21-level 100 set cxcr5-level 0]
+      hatch-mem-b-cells 1 [set time-alive 0 set color white set shape "target" set s1pr1-level 10 set pro-breg 0 set cd21-level 0 set cxcr5-level 5]
     ]
-
   ]
 end
 
+
+; THIS FUNCTION IS NOT CURRENTLY BEING USED
 to activated-mem-response
-  set tnf-a tnf-a + 1
-  if counter mod 100 = 0 [
-    hatch-sl-plasma-cells 1 [ set time-alive 0 set color lime + 3 set shape "circle" set size 1 set s1pr1-level 0 set pro-breg 0]
-  ]
+;  set tnf-a tnf-a + 1
+;  if counter mod 100 = 0 [
+;    hatch-sl-plasma-cells 1 [ set time-alive 0 set color lime + 3 set shape "circle" set size 1 set s1pr1-level 0 set pro-breg 0]
+;  ]
 end
 
 
 to gc-b-cell-function
-
   if in-blood = false [
     if patch-type = 2 [
       set in-blood true
       hide-turtle
     ]
 
-    check-breg-status
-
+    ; Downregulates ebi2r and ccr7 so it can localize to follicle center again
     set ebi2r-level 0
     set ccr7-level 0
 
+    ; The GC B-cell only moves if it has not yet reached the follicle center
     ifelse distance patch 0 0 > 15 [
       chemotaxis
       gc-move
     ][
-      let proPC (il21 + il10 + if-a + if-g )
-      let proMem (il21 + il4) * 2;* 100
-;     let rPC random proPC
-;     let rMem random proMem
+      ; Once the GC B-cell reaches the follicle center, it performs the below:
+      let proPC (il21 + il10 + if-a + if-g ) * 8  ; Scaled for reasonable plasma cell populations
+      let proMem (il21 + il4)
 
-      set level-of-activation il2 + il4 + il10 + il15 + il21 - if-g - if-a
-      ;if round (time-alive mod (20 / level-of-activation)) = 0 [
-      if time-alive mod 20 = 0 [
+      if time-alive mod 100 = 0 [  ; For now, hard-coded to represent rate of proliferatoin. Should be influenced by cytokines from state diagram
         ifelse proPC > proMem [
-          hatch-ll-plasma-cells 1 [ set time-alive 0 set color lime set shape "circle" set size 1 set s1pr1-level 40 set pro-breg 0]
+          hatch-ll-plasma-cells 1 [ set time-alive 0 set color lime set shape "circle" set size 1 set s1pr1-level 40 set pro-breg 0 set tnfa-threshold tnfa-threshold - 70]
         ][
-          hatch-mem-b-cells 1 [ set time-alive 0 set color white set shape "target" set s1pr1-level 10 set cxcr5-level 0 set pro-breg 0 set cd21-level 100]
+          hatch-mem-b-cells 1 [ set time-alive 0 set color white set shape "target" set s1pr1-level 10 set cxcr5-level 5 set pro-breg 0 set cd21-level 0]
         ]
       ]
     ]
+
+    check-breg-status
   ]
 
   check-tnf-status
 
   set time-alive time-alive + 1
-  if time-alive > 1000 [
-    ask link-neighbors [ set bcell-binding-status false ]
+  if time-alive > 700 [
+    ask link-neighbors [ set bcell-binding-status false ]  ; Once the GC B-cell dies, frees the bound Tfh or TH2 cell
     die
   ]
-
-
 end
+
 
 to sl-plasma-cell-function
   if in-blood = false [
@@ -506,11 +453,9 @@ to sl-plasma-cell-function
     move
   ]
 
-  set level-of-activation il6
-    ;if round (time-alive mod (10 / level-of-activation)) = 0 [
-    if time-alive mod 50 = 0 [
-      hatch-antibodies 1 [ set time-alive 0 set antibody-type isotype set hidden? true ]
-    ]
+  if time-alive mod 50 = 0 [  ; For now, hard-coded to represent rate of proliferatoin. Should be influenced by cytokines from state diagram
+    hatch-antibodies 1 [ set time-alive 0 set antibody-type isotype set hidden? true ]
+  ]
 
   check-tnf-status
 
@@ -523,9 +468,7 @@ end
 
 to ll-plasma-cell-function
   ifelse in-blood = false [
-
     if patch-type = 2 [
-      ;set num-llpcs-in-blood num-llpcs-in-blood + 1
       set in-blood true
       hide-turtle
     ]
@@ -535,13 +478,10 @@ to ll-plasma-cell-function
     chemotaxis
     move
   ][
-    set level-of-activation il6
-    ;if round (time-alive mod (50 / level-of-activation)) = 0 [
-    if time-alive mod 200 = 0 [
+    if time-alive mod 200 = 0 [ ; For now, hard-coded to represent rate of proliferatoin. Should be influenced by cytokines from state diagram
       hatch-antibodies 1 [ set time-alive 0 set antibody-type isotype set hidden? true  ]
     ]
   ]
-
 
   check-tnf-status
 
@@ -553,99 +493,64 @@ to ll-plasma-cell-function
 
 end
 
+
+; Memory B-cell function is set up to be very similar to naive-B-cell function
 to mem-b-cell-function
-  set cd21-level 20 - ((il6 - il10) * 10)
-  ifelse in-blood = false [
-     if patch-type = 2 [
-      ;set num-llpcs-in-blood num-llpcs-in-blood + 1
-      set in-blood true
-      hide-turtle
-      set time-in-blood 0
+  ; Sets the cd21 expression level based off of il6 and il10 in current patch
+  set cd21-level 60 - ((il6 + il10) * 10)
+  if in-blood = false [
+    if patch-type = 2 [
+      setxy 49 0
+      set pro-breg 0
     ]
 
-;    let apc one-of fdcs-here
-;    let antigen one-of bacteria-here
-;    if (apc != nobody and [presented-antigen] of apc != 0) or antigen != nobody[
-;      set breed activated-b-cells
-;      set pro-breg 0
-;      set shape "circle"
-;      set size 1
-;      set color yellow
-;      set csr-bool false
-;      set time-alive 0
-;      set s1pr1-level 0
-;      ifelse antigen != nobody [
-;        set response-type 3  ;; 3 response type is memb reponse upon activation
-;        ask antigen [ die ]
-;
-;      ][
-;        if apc != nobody [
-;          set response-type 3
-;        ]
-;      ]
-;    ]
-
-    if cd21-level > 10[
     let apc one-of fdcs-here
     let antigen one-of bacteria-here
     if (apc != nobody and [presented-antigen] of apc != 0) or antigen != nobody[
-      set breed activated-b-cells
-      set pro-breg 0
-      set shape "circle"
-      set size 1
-      set color yellow
-      set csr-bool false
-      set time-alive 100
-      ifelse antigen != nobody [
-        let rTI random [num-TI-ag] of antigen
-        let rTD random [num-TD-ag] of antigen
-        ifelse rTI > rTD [
-          set response-type 1
+      ifelse cd21-level > bcell-cd21-activation-threshold [
+        print word (word breed " activating with cd21-level at: ") cd21-level
+        set breed activated-b-cells
+        set il6 il6 + phag-il6-burst
+        set cxcr5-level 16
+        set s1pr1-level 0
+        set pro-breg 0
+        set shape "circle"
+        set size 1
+        set color yellow
+        set csr-bool false
+        set time-alive 100
+        ifelse antigen != nobody [
+          let rTI random [num-TI-ep] of antigen
+          let rTD random [num-TD-ep] of antigen
+          ifelse rTI > rTD [
+            set response-type 1   ; 1 is TI response
+          ][
+            set response-type 2   ; 2 is TD
+            set ccr7-level 12
+            set ebi2r-level 12
+          ]
+          ask antigen [ die ]
         ][
-          set response-type 2   ; 2 is TD
-          set ccr7-level 12
-          set ebi2r-level 12
+          if apc != nobody [ set response-type [presented-antigen-type] of apc ]
         ]
-
-        ask antigen [ die ]
-
-
       ][
-        if apc != nobody [
-          set response-type [presented-antigen-type] of apc
-        ]
+        print  word  (word breed " NOT activating with cd21-level at: ") cd21-level
       ]
     ]
-    ]
-
     check-breg-status
 
     chemotaxis
     move
-  ][
-    set time-in-blood time-in-blood + 1
-    if time-in-blood > 300 [
-      if hidden? [
-        set pro-breg 0
-        set hidden? false
-        set in-blood false
-        setxy 49 0
-        set s1pr1-level 10
-        set cxcr5-level 10
-      ]
-    ]
   ]
 
   check-tnf-status
-
-
 
   set time-alive time-alive + 1
   if time-alive > 15000 [
     die
   ]
-
 end
+
 
 to th0-cell-function
   let pro-TH1 (il12 + if-g) * 100
@@ -705,12 +610,12 @@ to th0-cell-function
 end
 
 to tfh-cell-function
-
   if distance patch 0 0 > 20 or bcell-binding-status = false [
     chemotaxis
     move
   ]
 
+  ; Secretes the following cytokines
   set il21 il21 + 2
   set il4 il4 + 1
   set il2 il2 + 1
@@ -719,20 +624,19 @@ to tfh-cell-function
   set time-alive time-alive + 1
   if time-alive > 500
     [die]
-
-
 end
+
 
 to th1-cell-function
   chemotaxis
   move
 
+  ; Secretes the following cytokines
   set if-g if-g + 1
 
   set time-alive time-alive + 1
   if time-alive > 500
     [die]
-
 end
 
 to th2-cell-function
@@ -741,6 +645,7 @@ to th2-cell-function
     move
   ]
 
+  ; Secretes the following cytokines
   set il4 il4 + 1
   set il10 il10 + 1
 
@@ -748,13 +653,13 @@ to th2-cell-function
   if time-alive > 500 [
     die
   ]
-
 end
 
-to bacteria-function
-  if patch-type = 2 [ ;; for bacteria, im having them recirculate through blood. when recirculating, they can either just go back into LN, or can be captured by FDC. random cahnce of either
-    let x random 2
 
+to bacteria-function
+  if patch-type = 2 [ ;; for bacteria, im having them recirculate through blood. when recirculating, they can either just go back into LN, or can be captured by FDC. random chance of either
+    ; Randomly chooses if bacteria will recirculate or will be captured by FDC
+    let x random 2
     ifelse x = 0 [
       setxy 49 0
     ][
@@ -766,27 +671,52 @@ to bacteria-function
           let rTI random number-of-TI-epitopes
           let rTD random number-of-TD-epitopes
           ifelse rTI > rTD [
-            set presented-antigen-type 1   ;; 1 is TI
+            set presented-antigen-type 1   ;; 1 is TI epitope to be presented
           ][
-            set presented-antigen-type 2    ;; 2 is TD
+            set presented-antigen-type 2    ;; 2 is TD epitope to be presented
           ]
         ]
       ]
     ]
   ]
+
   chemotaxis
   move
-
-
-  set time-alive time-alive + 1
-  ;if time-alive > 500
-    ;[die]
-
 end
 
+
+; Checks level of stimulation to differentiate into a regulatory B-cell
+to check-breg-status
+  ifelse pro-breg > breg-threshold [
+    ;print word breed " turned into breg"
+    set breed breg-cells
+    set size 1
+    set shape "circle"
+    set color violet
+    set s1pr1-level 0
+    set time-alive 0
+
+  ][
+    set pro-breg (il6 + il21) * 45
+  ]
+end
+
+
+; Checks level of tnf-a stimulation for apoptosis
+to check-tnf-status
+  set tnf-a tnf-a - 0.01 ;;represents consumption of TNFa
+  set tnf-a-stimulation 100 * tnf-a
+
+  if tnf-a-stimulation > tnfa-threshold [
+    print word breed "APOPTOSE with tnf: " print tnf-a-stimulation
+    set total-num-of-apoptosed-cells total-num-of-apoptosed-cells + 1
+    die
+  ]
+end
+
+
+; Diffuses and evaporates all the chemokines
 to update-chemokine-gradient
-
-
   diffuse cxcl13-level 1   ;; determines the mobility/solubility of cxcl13
   diffuse ccl19-level 1
   diffuse s1p-level 1
@@ -802,7 +732,6 @@ to update-chemokine-gradient
   diffuse if-a 1
   diffuse tnf-a 1
   diffuse tgf-b 1
-
 
   ask patches [
     set cxcl13-level cxcl13-level * 0.9  ;; takes into account protease-driven degradation of cxcl13
@@ -821,38 +750,28 @@ to update-chemokine-gradient
     set tnf-a tnf-a * 0.9
     set tgf-b tgf-b * 0.9
 
+    ; Used to visualize the cytokine levels in the follicle, based off of the interface chooser
     if patch-type = 0 [
-      let total-cytokine-level il2 + il4 + il6 + il10 + il12 + il15 + il21 + tnf-a + tgf-b + if-a + if-g
-      if cytokine != "none" [
-        if cytokine = "tnf-a" [
-          set pcolor scale-color green tnf-a 0.1 3  ;;used to visualize cxcl13 or ccl19 gradient
-        ]
-        if cytokine = "il6" [
-          set pcolor scale-color green il6 0.1 3  ;;used to visualize cxcl13 or ccl19 gradient
-        ]
-        if cytokine = "il10" [
-          set pcolor scale-color green il10 0.1 3  ;;used to visualize cxcl13 or ccl19 gradient
-        ]
+      ;let total-cytokine-level il2 + il4 + il6 + il10 + il12 + il15 + il21 + tnf-a + tgf-b + if-a + if-g
+      if cytokine-to-visualize = "tnf-a" [
+        set pcolor scale-color green tnf-a 0.1 3  ;;used to visualize cxcl13 or ccl19 gradient
+      ]
+      if cytokine-to-visualize = "il6" [
+        set pcolor scale-color green il6 0.1 3  ;;used to visualize cxcl13 or ccl19 gradient
+      ]
+      if cytokine-to-visualize = "il10" [
+        set pcolor scale-color green il10 0.1 3  ;;used to visualize cxcl13 or ccl19 gradient
+      ]
+      if cytokine-to-visualize = "s1p" [
+        set pcolor scale-color green s1p-level 0.01 3  ;;used to visualize cxcl13 or ccl19 gradient
       ]
     ]
-
-
   ]
 end
 
 
-
-
-;This function is called when the user clicks the "inoculate" button in the interface. It adds bacteria into the system
+;This inoculate function is called when the user clicks the "inoculate" button in the interface. It manually adds bacteria into the system
 to inoculate
-
-  ;ask patches [ set tnf-a tnf-a + (number-of-bacteria / 10) ]
-  ;set incoming-tnf-a (number-of-bacteria / 1000)
-  ;set incoming-il6 (number-of-bacteria / 1000)
-  ;ask patches [ set il6 il6 + (number-of-bacteria / 4) ]
-
-
-
   ask up-to-n-of (number-of-bacteria / 2) fdcs [
     set time-presenting 0
     set presented-antigen bacteria-epitope-type
@@ -878,9 +797,69 @@ to inoculate
     set time-alive 0
     set in-blood false
     set epitope-type bacteria-epitope-type                        ;; Sets the bacteria's epitope-type. "bacteria-epitope-type" is a value is from an interface slider
-    set num-TI-ag number-of-TI-epitopes
-    set num-TD-ag number-of-TD-epitopes
+    set num-TI-ep number-of-TI-epitopes
+    set num-TD-ep number-of-TD-epitopes
   ]
+end
+
+
+; This function is called when the AutoInoculate? interface chooser is ON. It is called in the go function
+to auto-inoculate [num-bac]
+  ask up-to-n-of (num-bac / 2) fdcs [
+    set time-presenting 0
+    set presented-antigen bacteria-epitope-type
+   ;set color 15 + (presented-antigen - 1) * 30
+    set color red
+
+    let rTI random number-of-TI-epitopes
+    let rTD random number-of-TD-epitopes
+    ifelse rTI > rTD [
+      set presented-antigen-type 1   ;; 1 is TI
+    ][
+      set presented-antigen-type 2    ;; 2 is TD
+    ]
+  ]
+
+  create-bacteria (num-bac / 2) [                            ;; Creates bacteria. "number-of-bacteria" is a variable controlled by an interface slider
+    ;set color 15 + (bacteria-epitope-type - 1) * 30               ;; Sets the color of the bacteria based on epitope type. Uses netlogo's 0-139 color scale (integer values)
+    set color red
+    set shape "bug"
+    set size 2
+    setxy 49 0
+    set s1pr1-level 8
+    set time-alive 0
+    set in-blood false
+    set epitope-type bacteria-epitope-type                        ;; Sets the bacteria's epitope-type. "bacteria-epitope-type" is a value is from an interface slider
+    set num-TI-ep number-of-TI-epitopes
+    set num-TD-ep number-of-TD-epitopes
+  ]
+end
+
+
+; Calculates the amount of tnf-a and il6 that is evenly distributed in the follicle based off of # of bacteria still present in the system
+to calculate-incoming-tnfa-il6-level
+  ask patches [set tnf-a tnf-a + ((count bacteria) / 500)]
+  ask patches [set il6 il6 + ((count bacteria) / 500)]
+end
+
+
+to check-overall-cd21-expression
+  if ticks mod 20 = 0 [     ; Only calculating avg CD21 expression every 50 ticks to increase run speed
+    set average-cd21-expression 0
+    ask naive-b-cells [
+      set average-cd21-expression average-cd21-expression + cd21-level
+    ]
+    ask mem-b-cells [
+      set average-cd21-expression average-cd21-expression + cd21-level
+    ]
+
+    ifelse count naive-b-cells != 0 or count mem-b-cells != 0 [
+      set average-cd21-expression average-cd21-expression / (count naive-b-cells + count mem-b-cells)
+    ][
+      set average-cd21-expression 0
+    ]
+  ]
+
 end
 
 
@@ -966,55 +945,28 @@ to move
   fd 1
 end
 
+
+; Similar to move, but just slower. Used to further delay onset/seeding of the GC response
 to gc-move
   rt random 50
   lt random 50
   fd 0.5
 end
 
-
-to make-movie
-  if vid:recorder-status = "inactive" [
-    user-message "The recorder is inactive. There is nothing to save."
-    stop
+to breg-move
+  rt random 50
+  lt random 50
+  if patch-ahead 1 != nobody [
+    if [patch-type] of patch-ahead 1 = 0 [
+      fd 1
+    ]
   ]
-  ; prompt user for movie location
-  user-message (word
-    "Choose a name for your movie file (the "
-    ".mp4 extension will be automatically added).")
-  let path user-new-file
-  if not is-string? path [ stop ]  ; stop if user canceled
-  ; export the movie
-  carefully [
-    vid:save-recording path
-    user-message (word "Exported movie to " path ".")
-  ] [
-    user-message error-message
-  ]
-end
-
-to insert-cytokines
-;  if mouse-down?     ;; reports true or false to indicate whether mouse button is down
-;    [
-;      ask patch mouse-xcor mouse-ycor [
-;        ask patches in-radius 3 [
-;          set il4 il-4
-;          set il10 il-10
-;          set il12 il-12
-;          set il15 il-15
-;          set il21 il-21
-;          set if-a ifn-alpha
-;          set if-g ifn-gamma
-;          set tgf-b tgf-beta
-;        ]
-;      ]
-;    ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-683
+797
 10
-1133
+1247
 461
 -1
 -1
@@ -1041,7 +993,7 @@ ticks
 BUTTON
 14
 16
-106
+71
 54
 NIL
 setup
@@ -1056,9 +1008,9 @@ NIL
 1
 
 BUTTON
-119
+79
 16
-217
+134
 55
 NIL
 go\n
@@ -1073,10 +1025,10 @@ NIL
 1
 
 BUTTON
-548
-23
-634
-56
+697
+34
+778
+70
 Add Antigen
 inoculate
 NIL
@@ -1090,25 +1042,25 @@ NIL
 1
 
 SLIDER
-334
-11
-512
-44
+326
+15
+504
+48
 number-of-bacteria
 number-of-bacteria
 0
-500
-52.0
+300
+50.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-329
-46
-518
-79
+328
+55
+505
+88
 bacteria-epitope-type
 bacteria-epitope-type
 1
@@ -1120,10 +1072,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-324
-81
-529
-114
+515
+18
+682
+51
 number-of-TD-epitopes
 number-of-TD-epitopes
 0
@@ -1135,10 +1087,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-327
-116
-527
-149
+514
+53
+680
+86
 number-of-TI-epitopes
 number-of-TI-epitopes
 0
@@ -1150,10 +1102,10 @@ NIL
 HORIZONTAL
 
 PLOT
-244
-158
-656
-439
+289
+367
+784
+513
 Ag-Specific B-Cell Populations
 NIL
 NIL
@@ -1165,17 +1117,17 @@ true
 true
 "" ""
 PENS
-"LLPCs" 1.0 0 -14439633 true "" "plot count ll-plasma-cells with [in-blood = true]"
+"LLPCs" 1.0 0 -14439633 true "" "plot count ll-plasma-cells"
 "SLPCs" 1.0 0 -8330359 true "" "plot count sl-plasma-cells"
 "Mem B-Cells" 1.0 0 -7500403 true "" "plot count mem-b-cells"
-"Total B Lymphocytes" 1.0 0 -2674135 true "" "plot (count mem-b-cells) + (count ll-plasma-cells with [in-blood = true]) + (count sl-plasma-cells )"
+"pen-4" 1.0 0 -8630108 true "" "plot count breg-cells"
 
 PLOT
-17
-179
-192
-306
-Antibody Response Curve
+290
+104
+450
+224
+Antibody Levels
 NIL
 Ab Level
 0.0
@@ -1189,11 +1141,143 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot count antibodies"
 
 PLOT
+625
+102
+785
+222
+Total IL-6 Levels
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot sum ([il6] of patches)"
+
+CHOOSER
+807
+481
+963
+526
+cytokine-to-visualize
+cytokine-to-visualize
+"none" "tnf-a" "il6" "il10" "s1p"
+0
+
+MONITOR
+146
+15
+290
+60
+Number of Days Elapsed
+days-passed
+1
+1
+11
+
+SWITCH
+18
+84
+141
+117
+RandomRuns?
+RandomRuns?
+0
+1
+-1000
+
+SLIDER
+148
+84
+265
+117
+RandomSeed
+RandomSeed
+0
+1000
+578.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
 16
-316
-197
-440
-IL-10 Production
+327
+270
+360
+bcell-cd21-activation-threshold
+bcell-cd21-activation-threshold
+0
+100
+15.0
+1
+1
+NIL
+HORIZONTAL
+
+MONITOR
+980
+478
+1082
+523
+NIL
+count bacteria
+17
+1
+11
+
+SWITCH
+18
+126
+266
+159
+AutoInoculate?
+AutoInoculate?
+0
+1
+-1000
+
+SLIDER
+16
+369
+269
+402
+bcell-tnfa-apop-threshold
+bcell-tnfa-apop-threshold
+0
+500
+263.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+17
+411
+270
+444
+bcell-breg-diff-threshold
+bcell-breg-diff-threshold
+0
+500
+180.0
+1
+1
+NIL
+HORIZONTAL
+
+PLOT
+453
+102
+618
+224
+Total IL-10 Levels
 NIL
 NIL
 0.0
@@ -1206,54 +1290,96 @@ false
 PENS
 "default" 1.0 0 -16777216 true "" "plot sum ([il10] of patches)"
 
-CHOOSER
-684
-477
-822
-522
-cytokine
-cytokine
-"none" "tnf-a" "il6" "il10"
+INPUTBOX
+19
+171
+168
+231
+first-exposure-amt
+30.0
+1
 0
+Number
 
-BUTTON
-125
-72
-248
-105
-NIL
-make-movie
-NIL
+INPUTBOX
+140
+171
+289
+231
+second-exposure-amt
+30.0
 1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
+0
+Number
 
-SWITCH
-15
-71
-117
-104
-recording
-recording
-1
-1
--1000
+PLOT
+290
+227
+550
+362
+Average CD21 Expression
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot average-cd21-expression"
 
-MONITOR
-25
-122
-188
-167
-Number of Days Elapsed
-days-passed
+PLOT
+557
+225
+783
+362
+Total Apoptosis
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot total-num-of-apoptosed-cells"
+
+PLOT
+287
+523
+785
+673
+Total Lymphocyte Counts
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"Lymphocytes" 1.0 0 -2674135 true "" "plot (count mem-b-cells) + (count ll-plasma-cells) + (count sl-plasma-cells ) + (count breg-cells) + (count activated-b-cells) + (count gc-b-cells)"
+
+SLIDER
+18
+457
+267
+490
+phag-il6-burst
+phag-il6-burst
+0
+20
+3.0
 1
 1
-11
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## Description of the model
@@ -1615,6 +1741,103 @@ NetLogo 6.2.2
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="Calibration Parameters" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="3800"/>
+    <metric>count mem-b-cells</metric>
+    <metric>count sl-plasma-cells</metric>
+    <metric>count ll-plasma-cells</metric>
+    <metric>count breg-cells</metric>
+    <metric>count mem-b-cells + count sl-plasma-cells + count ll-plasma-cells + count breg-cells + count activated-b-cells + count gc-b-cells</metric>
+    <enumeratedValueSet variable="number-of-TD-epitopes">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="cytokine">
+      <value value="&quot;none&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="number-of-TI-epitopes">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="number-of-bacteria">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="bacteria-epitope-type">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="RandomRuns?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="RandomSeed" first="1" step="1" last="3"/>
+    <steppedValueSet variable="bcell-cd21-activation-threshold" first="1" step="2" last="30"/>
+    <steppedValueSet variable="bcell-tnfa-apop-threshold" first="100" step="30" last="300"/>
+    <steppedValueSet variable="bcell-breg-diff-threshold" first="100" step="30" last="300"/>
+    <steppedValueSet variable="phag-il6-burst" first="1" step="1" last="4"/>
+    <enumeratedValueSet variable="first-exposure-amt">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="second-exposure-amt" first="50" step="250" last="300"/>
+    <enumeratedValueSet variable="autoinoculate?">
+      <value value="true"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Calibrated 10 Runs" repetitions="10" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="4800"/>
+    <metric>average-cd21-expression</metric>
+    <metric>total-num-of-apoptosed-cells</metric>
+    <metric>sum ([il10] of patches)</metric>
+    <metric>count mem-b-cells</metric>
+    <metric>count sl-plasma-cells</metric>
+    <metric>count ll-plasma-cells</metric>
+    <metric>count breg-cells</metric>
+    <metric>count mem-b-cells + count sl-plasma-cells + count ll-plasma-cells + count breg-cells + count activated-b-cells + count gc-b-cells</metric>
+    <enumeratedValueSet variable="first-exposure-amt">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="cytokine-to-visualize">
+      <value value="&quot;none&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="number-of-TI-epitopes">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="bcell-cd21-activation-threshold">
+      <value value="15"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="number-of-bacteria">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="bcell-breg-diff-threshold">
+      <value value="180"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="bacteria-epitope-type">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="RandomSeed">
+      <value value="578"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="number-of-TD-epitopes">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="phag-il6-burst">
+      <value value="3"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="RandomRuns?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="AutoInoculate?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="bcell-tnfa-apop-threshold">
+      <value value="263"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="second-exposure-amt">
+      <value value="300"/>
+    </enumeratedValueSet>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default

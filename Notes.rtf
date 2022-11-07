@@ -1,13 +1,13 @@
 {\rtf1\ansi\ansicpg1252\cocoartf2580
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fswiss\fcharset0 Helvetica-Bold;}
-{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red35\green35\blue35;\red30\green30\blue30;
-\red245\green245\blue245;}
-{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\cssrgb\c18039\c18039\c18039;\cssrgb\c15686\c15686\c15686;
-\cssrgb\c96863\c96863\c96863;}
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red0\green0\blue0;\red35\green35\blue35;
+\red30\green30\blue30;}
+{\*\expandedcolortbl;;\csgray\c0\c0;\cssrgb\c0\c0\c0;\cssrgb\c18039\c18039\c18039;
+\cssrgb\c15686\c15686\c15686;}
 \margl1440\margr1440\vieww25400\viewh12800\viewkind0
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f0\fs24 \cf0 Objects\
+\f0\fs24 \cf0 \cb2 Objects\
 	- B cells\
 		- Naive B cell\
 		- Activated B Cell\
@@ -187,10 +187,10 @@ B-cell signals from B cell overview (nature)\
 \
 \
 \
-ILs and their functions (from \cf2 \expnd0\expndtw0\kerning0
+ILs and their functions (from \cf3 \expnd0\expndtw0\kerning0
 B cells responses and cytokine production are regulated by their immune microenvironment \
 \pard\pardeftab720\sa240\partightenfactor0
-\cf2 Monica I. Vazquez\up8 a,b\up0 , Jovani Catalan-Dibene\up8 a,b\up0 , and Albert Zlotnik\up8 a,b\up0 ) \cf0 \kerning1\expnd0\expndtw0 \
+\cf3 Monica I. Vazquez\up8 a,b\up0 , Jovani Catalan-Dibene\up8 a,b\up0 , and Albert Zlotnik\up8 a,b\up0 ) \cf0 \kerning1\expnd0\expndtw0 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf0 	IL-4\
 	- Secretd by Th1 cells, but in GCs, also secreted by Tfh cells (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5110032/#:~:text=Apart%20from%20Th2%20cells%2C%20Tfh,cells%20%5B12%2C%2015%5D.)\
@@ -239,7 +239,7 @@ IIRABM used 6 min per tick\
 Timeline\
 - half life of naive b cells is 13-22 weeks (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4637268/#:~:text=Given%20that%20the%20accepted%20half,lifespans%20than%20their%20na%C3%AFve%20counterparts.)\
 	- they move 6 micrometers per minute, every tick they move 2 (36 micrometers) patches\
-	- normal lymph node follicle diameter is 2 mm ( \cf3 \expnd0\expndtw0\kerning0
+	- normal lymph node follicle diameter is 2 mm ( \cf4 \expnd0\expndtw0\kerning0
 IMMUNE-LYMPHATIC SYSTEM Abraham L.\'a0Kierszenbaum\'a0M.D., Ph.D., in\'a0Histology and Cell Biology: An Introduction to Pathology, 2020)\
 		- world is 100 patches wide, so each patch is 20 micrometers\
 		\cf0 \kerning1\expnd0\expndtw0 \
@@ -258,13 +258,13 @@ How to represent sepsis?\
 \
 \
 B-Cell Exhaustion\
-- Main Frontiers Paper (\cf4 \cb5 \expnd0\expndtw0\kerning0
-Polymicrobial Sepsis Chronic Immunoparalysis Is Defined by Diminished Ag-Specific T Cell-Dependent B Cell Responses\cf0 \cb1 \kerning1\expnd0\expndtw0 )\
+- Main Frontiers Paper (\cf5 \expnd0\expndtw0\kerning0
+Polymicrobial Sepsis Chronic Immunoparalysis Is Defined by Diminished Ag-Specific T Cell-Dependent B Cell Responses\cf0 \kerning1\expnd0\expndtw0 )\
 	- Decreased total number B cell count after sepsis\
 	- Decreased Ag-specific B cell count from vaccination after sepsis induction\
 	- Decreased Tfh cells after sepsis and vaccination\
 	- Decreased Ab production after sepsis after challenging the mouse with antigen\
-- \cf2 \expnd0\expndtw0\kerning0
+- \cf3 \expnd0\expndtw0\kerning0
 Septic Shock Shapes B Cell Response toward an Exhausted-like/Immunoregulatory Profile in Patients, Gustave\
 	- B cells were identified via the CD19 surface marker\
 	- Measured expression of B cell HLA-DR\
@@ -299,7 +299,6 @@ B-cell Depletion\
 \
 	\
 	- \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf0 \kerning1\expnd0\expndtw0 \
 - \
 \
@@ -312,28 +311,19 @@ Questions\
 \
 \
 \
--
-\f1\b  How to handle cytokine influence?\
+- How to handle cytokine influence?\
 	- Ex cd21. Should we have CD21 decrease every tick by amount of IL6/10? Or just set cd21 to 100-IL6/10? In the former, a longer lifespan of a cell would promote decreased expression. Not sure if we want this or not.\
 - How to represent sepsis?\
-	- In these papers, it seems like they are \'93stimulating\'94 the system with antigen challenge again after sepsis induction, so it doesn\'92t make sense to have sepsis based off of the number of antigen i insert into the LN. rather, should sepsis be its own standalone button that simply adds TNF-a and IL6 to the system?
-\f0\b0 \
+	- In these papers, it seems like they are \'93stimulating\'94 the system with antigen challenge again after sepsis induction, so it doesn\'92t make sense to have sepsis based off of the number of antigen i insert into the LN. rather, should sepsis be its own standalone button that simply adds TNF-a and IL6 to the system?\
 \
 Updates\
 - Bacteria now recirculating through LN. eveyrtime they recirulate, they have a random chance of being captured by FDC (if this is case, that bacteria will die)\
-- Mem B function implemented as just memory b cell -> SLPC upon activation. dubious evidence that they can undergo GC response.\
+- Mem B function implemented as just the same as a naive b cell response\
 - UPDATES TO STATE DIAGRAM\
 	- Proliferation of activated b cells in t-independent reaction\
 		- IL4, il10, il15, il21\
 \
 \
-\
-NOTES FROM LAST MEETING\
-- make cd21 expression on memory b cells decrease with IL6 and IL10\
-- make global variables for time units hours and days (units we\'92re familiar with) so we can have them monitored\
-- look into movie making in net logo\
-- create initial populations using random distribution of age\
-- look into choosers to pick the things i want hidden. use choosers to visualize specific cytokines and their distribution to make sure distribution looks normal\
 \
 \
 Include surface receptor (primary, simplest set of surface markers for each breed)\
@@ -345,6 +335,41 @@ in order to implement the cd21-mediated memory b-cell exhaustion, i\'92ve first 
 \
 right now, as soon as my memory b cells are made/spawned during the first antigen exposure, they sometimes come into contact with an antigen/FDC almost immediately just because their spawn location is located really close to antigen/FDCs. when that happens, the first exposure response is really big because the memory b cells are immediately amplifying the response. as a result, \
 \
+go over implementation of b-reg differentiation and tif-apoptosis\
+	- rn, both are implemented as immediate changes if threshold is reached on current patch\
+	- should i instead do a ticking threshold, where the stimulation keeps getting added until the threshold is reached?\
+		- issue with that is the longer something is alive, the more likely it is to get stimulated to hit the threshold\
+\
+too much of a delay between when the drop in total lymphocyte count actually begins, and right now, even the delayed drop is only happening b/c when mem cells differentiate into b reg, their lifespan shortens, so the drop only occurs when the b reg cells start dying.\
+	- and when the b reg starts dying is when the \
+\
+i can\'92t get LLPCs to die without completely apoptosisng all of the mem b cells, so none of them can turn int b-reg cells\
+\
+\
+have a version of the model that includes the burn-in period already (non-naive version)\
+	- do 10 burn ins to see how much randomness there is\
+\
+\
+- 10, 330, 180\
+	- normal curve looks better\
+	- sepsis isn\'92t right bc there\'92s no decrease in total lymphocyte count until 6 days post sepsis induction\
+\
+- 10, 225, 180\
+	- sepsis curve looks pretty decent, still some issues like none of the LLPCs are dying, and if i lower the threshold enough for LLPCs to die, then all mem b cells die and none turn into b-reg cells\
+	- takes 1100 ticks for the SLPC response to start decreasing on 1st normal exposure\
+	- normal curve looks bad b/c now second response doesn\'92t increase SLPC response, probably b/c there\'92s so many more mem b ce,,s so antigen gets neutralized faster, so total il6 is lower, so less b-reg diff, so less SLPCs and more mem b cells instead\
+\
+random seed 578 normal looks decent\
+\
+try releasing IL6 when naive or mem b cell binds\
+- \
+\
+Future Direction\
+- Should refine b-reg differentiation\
+	- right now, il6 is the only factor that induces b reg differentiation. in real life, requires LPS/TLR stimulation as well\
+\
+\
+lock down what to put on UVM poster session by september 12th \
 \
 \
 Sources:\
