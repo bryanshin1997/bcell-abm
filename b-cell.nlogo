@@ -45,7 +45,10 @@ to setup
 
   ; Initializes the FDCs
   create-fdcs 100
-  ask fdcs [ set shape "square" set color brown move-to one-of patches in-radius 30 with [any? fdcs-here = false and any? fdcs-on neighbors = false]]   ; Ensures FDCs don't spawn ontop of eachother
+  ;ask fdcs [ set shape "square" set color brown move-to one-of patches in-radius 30 with [any? fdcs-here = false and any? fdcs-on neighbors = false]]   ; Ensures FDCs don't spawn ontop of eachother
+  ask fdcs [ set shape "square" set color brown ]
+  ask fdcs [ move-to one-of patches in-radius 30 with [not any? other fdcs in-radius 3]]   ; Ensures FDCs don't spawn ontop of eachother or too close together
+
 
   ; Initializes the starting population of Tfh cells
   create-tfh-cells 50
@@ -457,13 +460,14 @@ to gc-b-cell-function
     ][
       ; Once the GC B-cell reaches the follicle center, it performs the below:
       ;let proPC (il21 + il10 + if-a + if-g ) * 8  ; Scaled for reasonable plasma cell populations
-      let proPC (il21 + il10 * 1.0 + if-a + if-g)  ;* 6
-      let proMem (il21 + il4)
-
+      let proPC2 (il21 + il10 * 2 + if-a + if-g)  ;* 6
+      let proMem2 (il21 + il4)
+      let proPC random proPC2
+      let proMem random proMem2
       ;let proPC random 100        ;randomly choosing if it hatches a llpc or a mem b cell
       ;let proMem random 100
 
-      if time-alive mod 60 = 0 [  ; For now, hard-coded to represent rate of proliferatoin. Should be influenced by cytokines from state diagram
+      if time-alive mod 80 = 0 [  ; For now, hard-coded to represent rate of proliferatoin. Should be influenced by cytokines from state diagram
         ifelse proPC > proMem [
           ifelse ticks < 2800 [
             hatch-ll-plasma-cells 1 [ set exposure-number 1 set time-alive 0 set color lime set shape "circle" set size 1 set s1pr1-level 40 set pro-breg 0 set tnfa-threshold tnfa-threshold - 130]
@@ -1253,7 +1257,7 @@ CHOOSER
 cytokine-to-visualize
 cytokine-to-visualize
 "none" "tnf-a" "il6" "il10" "s1p"
-0
+2
 
 MONITOR
 145
@@ -1286,7 +1290,7 @@ RandomSeed
 RandomSeed
 0
 1000
-578.0
+569.0
 1
 1
 NIL
@@ -1353,7 +1357,7 @@ bcell-breg-diff-threshold
 bcell-breg-diff-threshold
 0
 500
-202.0
+181.0
 1
 1
 NIL
