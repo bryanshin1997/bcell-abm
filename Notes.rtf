@@ -1,10 +1,10 @@
-{\rtf1\ansi\ansicpg1252\cocoartf2580
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\rtf1\ansi\ansicpg1252\cocoartf2639
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fswiss\fcharset0 Helvetica-Bold;}
 {\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red0\green0\blue0;\red35\green35\blue35;
 \red30\green30\blue30;}
 {\*\expandedcolortbl;;\csgray\c0\c0;\cssrgb\c0\c0\c0;\cssrgb\c18039\c18039\c18039;
 \cssrgb\c15686\c15686\c15686;}
-\margl1440\margr1440\vieww25400\viewh12800\viewkind0
+\margl1440\margr1440\vieww25400\viewh12820\viewkind0
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
 \f0\fs24 \cf0 \cb2 Objects\
@@ -296,84 +296,85 @@ B-cell Depletion\
 				- TNF activates caspase cascade, which causes apoptosis\
 \
 \
+Parameters Im using as of 12/1/22\
+- cd21 act thresh = 15\
+- TNF pop thresh = 263\
+- breg diff thresh = 180\
+- phag il6 burst = 3\
 \
-	\
-	- \
-\cf0 \kerning1\expnd0\expndtw0 \
-- \
+Best parameters as of 12/7/22\
+- 7\
+- 275\
+- 202\
+- 0\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f1\b \cf3 With this latest behavior space run, the memory b cell response on normal doesn\'92t look good. 2nd response is often smaller than 1st. need to fix this asap.\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\b0 \cf3 \
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f1\b \cf3 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\b0 \cf3 Notes from 11/7 meeting\
+plot 100 and see what percent the 2nd normal response is lower than 1st\
+for LLPC, count the 2nd hit of LLPCs as a separate graph to see if we actually have a larger increase (look this up)\
+	for the sepsis graph, are same y axis\
+\
+Look into time lag bw tif-alpha that gets added along with bacteria\
+- add a 12 hour delay from inoculation and tif alpha and ili6, and see the new data (bacteria first, then tif surge (tif peak at 12 hours, and the il6 peak at 24 hours))\cf0 \kerning1\expnd0\expndtw0 \
 \
 \
-\
-Questions\
-- DONT yet have IL6 stimulating antibody secretion rate of llpcs and slpcs\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f1\b \cf0 Questions
+\f0\b0 \
+- don\'92t yet have IL6 stimulating antibody secretion rate of llpcs and slpcs\
 - Need to fix interacting b-t cells after one of them dies during gc reaction\
--\
 \
 \
 \
-- How to handle cytokine influence?\
-	- Ex cd21. Should we have CD21 decrease every tick by amount of IL6/10? Or just set cd21 to 100-IL6/10? In the former, a longer lifespan of a cell would promote decreased expression. Not sure if we want this or not.\
-- How to represent sepsis?\
-	- In these papers, it seems like they are \'93stimulating\'94 the system with antigen challenge again after sepsis induction, so it doesn\'92t make sense to have sepsis based off of the number of antigen i insert into the LN. rather, should sepsis be its own standalone button that simply adds TNF-a and IL6 to the system?\
 \
-Updates\
+
+\f1\b Updates
+\f0\b0 \
 - Bacteria now recirculating through LN. eveyrtime they recirulate, they have a random chance of being captured by FDC (if this is case, that bacteria will die)\
 - Mem B function implemented as just the same as a naive b cell response\
 - UPDATES TO STATE DIAGRAM\
 	- Proliferation of activated b cells in t-independent reaction\
 		- IL4, il10, il15, il21\
 \
-\
-\
-\
 Include surface receptor (primary, simplest set of surface markers for each breed)\
 we are only interested in IgM and IgG\
 check if FDCs secrete any of those cytokines\
 \
-\
-in order to implement the cd21-mediated memory b-cell exhaustion, i\'92ve first been implementing normal memory b cell function (during first exposure, memory b cells are generated so that there can be a more robust response upon second exposure). however, i\'92m running into some issues that i wanted to ask you about!\
-\
 right now, as soon as my memory b cells are made/spawned during the first antigen exposure, they sometimes come into contact with an antigen/FDC almost immediately just because their spawn location is located really close to antigen/FDCs. when that happens, the first exposure response is really big because the memory b cells are immediately amplifying the response. as a result, \
 \
-go over implementation of b-reg differentiation and tif-apoptosis\
-	- rn, both are implemented as immediate changes if threshold is reached on current patch\
-	- should i instead do a ticking threshold, where the stimulation keeps getting added until the threshold is reached?\
-		- issue with that is the longer something is alive, the more likely it is to get stimulated to hit the threshold\
-\
-too much of a delay between when the drop in total lymphocyte count actually begins, and right now, even the delayed drop is only happening b/c when mem cells differentiate into b reg, their lifespan shortens, so the drop only occurs when the b reg cells start dying.\
-	- and when the b reg starts dying is when the \
-\
-i can\'92t get LLPCs to die without completely apoptosisng all of the mem b cells, so none of them can turn int b-reg cells\
-\
-\
+decreased the apoptosis threshold for LLPCs so we see apoptosis there, since the TNF-a level at the LN exit (where LLPCs are hidden) is lower than the other areas \
+due to diffusion\
 have a version of the model that includes the burn-in period already (non-naive version)\
 	- do 10 burn ins to see how much randomness there is\
 \
 \
-- 10, 330, 180\
-	- normal curve looks better\
-	- sepsis isn\'92t right bc there\'92s no decrease in total lymphocyte count until 6 days post sepsis induction\
-\
-- 10, 225, 180\
-	- sepsis curve looks pretty decent, still some issues like none of the LLPCs are dying, and if i lower the threshold enough for LLPCs to die, then all mem b cells die and none turn into b-reg cells\
-	- takes 1100 ticks for the SLPC response to start decreasing on 1st normal exposure\
-	- normal curve looks bad b/c now second response doesn\'92t increase SLPC response, probably b/c there\'92s so many more mem b ce,,s so antigen gets neutralized faster, so total il6 is lower, so less b-reg diff, so less SLPCs and more mem b cells instead\
-\
-random seed 578 normal looks decent\
-\
-try releasing IL6 when naive or mem b cell binds\
-- \
-\
-Future Direction\
-- Should refine b-reg differentiation\
+
+\f1\b Future Direction\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\b0 \cf0 - Should refine b-reg differentiation\
 	- right now, il6 is the only factor that induces b reg differentiation. in real life, requires LPS/TLR stimulation as well\
 \
 \
-lock down what to put on UVM poster session by september 12th \
 \
-\
-Sources:\
-- https://www.jimmunol.org/content/198/10/3846\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f1\b \cf0 Sources:\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\b0 \cf0 - https://www.jimmunol.org/content/198/10/3846\
 	- used for t-independent vs t-dependent B cell response\
 - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2877811/\
 	- used for b cell migration to B/T cell border after activation\
