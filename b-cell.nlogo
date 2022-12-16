@@ -1257,7 +1257,7 @@ CHOOSER
 cytokine-to-visualize
 cytokine-to-visualize
 "none" "tnf-a" "il6" "il10" "s1p"
-2
+0
 
 MONITOR
 145
@@ -1290,7 +1290,7 @@ RandomSeed
 RandomSeed
 0
 1000
-569.0
+578.0
 1
 1
 NIL
@@ -1958,10 +1958,10 @@ NetLogo 6.2.2
     <metric>total-num-of-apoptosed-cells</metric>
     <metric>sum ([il10] of patches)</metric>
     <metric>count sl-plasma-cells</metric>
-    <metric>count (ll-plasma-cells with [exposure-number = 2])</metric>
     <metric>count (ll-plasma-cells with [exposure-number = 1])</metric>
-    <metric>count (mem-b-cells with [exposure-number = 2])</metric>
+    <metric>count (ll-plasma-cells with [exposure-number = 2])</metric>
     <metric>count (mem-b-cells with [exposure-number = 1])</metric>
+    <metric>count (mem-b-cells with [exposure-number = 2])</metric>
     <metric>count breg-cells</metric>
     <metric>sum ([tnf-a] of patches)</metric>
     <metric>sum ([il6] of patches)</metric>
@@ -1983,7 +1983,7 @@ NetLogo 6.2.2
       <value value="50"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="bcell-breg-diff-threshold">
-      <value value="202"/>
+      <value value="181"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="bacteria-epitope-type">
       <value value="30"/>
