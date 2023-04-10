@@ -31,6 +31,11 @@ globals [
   total-num-of-apoptosed-cells
 ]
 
+;; Most recent calibration of interface sliders
+;; cd21-activation-threshold: -7
+;; tnfa-apop-threshold: 275
+;; breg-diff-threshold: 181
+;; phag-il6-burst: 0
 
 ; Called when the "setup" button is clicked. Should be the first action by the user.
 to setup
@@ -68,6 +73,9 @@ end
 ; Called every tick
 to go
   calculate-incoming-tnfa-il6-level
+  ;if ticks > 960 [ ;; start simuluating background inflammation on day 20, or 960 ticks, so that the first inoculation isn't affected by background inflammation
+    simulate-background-inflammation
+  ;]
 
   ; Calculates the # of days passed from the # of ticks passed
   set days-passed ticks / 48    ;; 1 tick = 30 minutes, so 48 ticks = 1 day
@@ -932,6 +940,11 @@ to calculate-incoming-tnfa-il6-level
   ask patches [set il6 il6 + ((count bacteria) / 500)]
 end
 
+to simulate-background-inflammation
+  ask patches [set tnf-a tnf-a + background-tnfa]
+  ask patches [set il6 il6 + background-il6]
+end
+
 
 to check-overall-cd21-expression
   if ticks mod 20 = 0 [     ; Only calculating avg CD21 expression every 50 ticks to increase run speed
@@ -1398,7 +1411,7 @@ INPUTBOX
 287
 213
 second-exposure-amt
-200.0
+50.0
 1
 0
 Number
@@ -1548,6 +1561,28 @@ PENS
 "TI antigen" 1.0 0 -7500403 true "" ";plot count fdcs with [presented-antigen-type = 1]"
 "TD antigen" 1.0 0 -2674135 true "" ";plot count fdcs with [presented-antigen-type = 2]"
 "pen-3" 1.0 0 -955883 true "" "plot sum [il6] of patches"
+
+INPUTBOX
+20
+518
+126
+578
+background-tnfa
+0.1
+1
+0
+Number
+
+INPUTBOX
+141
+519
+290
+579
+background-il6
+0.1
+1
+0
+Number
 
 @#$#@#$#@
 ## Description of the model
@@ -2110,6 +2145,67 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="second-exposure-amt">
       <value value="30"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Background Inflammation - 1st Normal and 2nd Normal Antigen Stimuli" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>average-cd21-expression</metric>
+    <metric>total-num-of-apoptosed-cells</metric>
+    <metric>sum ([il10] of patches)</metric>
+    <metric>count sl-plasma-cells</metric>
+    <metric>count (ll-plasma-cells with [exposure-number = 1])</metric>
+    <metric>count (ll-plasma-cells with [exposure-number = 2])</metric>
+    <metric>count (mem-b-cells with [exposure-number = 1])</metric>
+    <metric>count (mem-b-cells with [exposure-number = 2])</metric>
+    <metric>count breg-cells</metric>
+    <metric>sum ([tnf-a] of patches)</metric>
+    <metric>sum ([il6] of patches)</metric>
+    <metric>count bacteria</metric>
+    <metric>count mem-b-cells + count sl-plasma-cells + count ll-plasma-cells + count breg-cells + count activated-b-cells + count gc-b-cells</metric>
+    <enumeratedValueSet variable="first-exposure-amt">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="cytokine-to-visualize">
+      <value value="&quot;none&quot;"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="background-tnfa" first="0" step="0.01" last="0.1"/>
+    <enumeratedValueSet variable="number-of-TI-epitopes">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="bcell-cd21-activation-threshold">
+      <value value="-7"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="number-of-bacteria">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="bcell-breg-diff-threshold">
+      <value value="181"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="bacteria-epitope-type">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="RandomSeed">
+      <value value="578"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="background-il6" first="0" step="0.01" last="0.1"/>
+    <enumeratedValueSet variable="number-of-TD-epitopes">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="phag-il6-burst">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="AutoInoculate?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="RandomRuns?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="bcell-tnfa-apop-threshold">
+      <value value="275"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="second-exposure-amt">
+      <value value="50"/>
     </enumeratedValueSet>
   </experiment>
 </experiments>
