@@ -1318,7 +1318,7 @@ bcell-cd21-activation-threshold
 bcell-cd21-activation-threshold
 0
 200
-50.0
+97.0
 1
 1
 NIL
@@ -1355,7 +1355,7 @@ bcell-tnfa-apop-threshold
 bcell-tnfa-apop-threshold
 0
 500
-240.0
+275.0
 1
 1
 NIL
@@ -1370,7 +1370,7 @@ bcell-breg-diff-threshold
 bcell-breg-diff-threshold
 0
 500
-140.0
+181.0
 1
 1
 NIL
@@ -1964,6 +1964,9 @@ NetLogo 6.2.2
     <metric>count mem-b-cells + count sl-plasma-cells + count ll-plasma-cells + count breg-cells + count activated-b-cells + count gc-b-cells</metric>
     <enumeratedValueSet variable="number-of-TD-epitopes">
       <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="cytokine">
+      <value value="&quot;none&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="number-of-TI-epitopes">
       <value value="10"/>
